@@ -20,6 +20,8 @@ library
                      , GameCore
                      , GameHost
                      , Data.Aeson.Text.Extended
+                     , Entities
+                     , EntityType
   build-depends:       base >= 4.7 && < 5
                      , protolude
                      , aeson

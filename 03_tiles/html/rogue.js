@@ -3,11 +3,56 @@ var tilesMain = null;
 
 var config = { "drawId": 0,
                "help": "",
+               "blank": null,
                "tileWidth": 32,
                "tileHeight": 32,
                "gridWidth": 0,
                "gridHeight" : 0
              };
+
+function drawTile( ctx, img, twidth, theight, dx, dy, trow, tcol ){
+  ctx.drawImage(
+    img,             //img
+    trow * twidth,   //sx
+    tcol * theight,  //sy
+    twidth,          //sWidth
+    theight,         //sHeight
+    dx * twidth,     //dx
+    dy * theight,    //dy
+    twidth,          //dWidth
+    theight          //dHeight
+  );
+}
+
+function tileFromTileId( id ){
+  const x = Math.trunc( id / 100 );
+  const y = id - (x * 100);
+  return [x, y];
+}
+
+function getCachedBlankCanvas(){
+  if( !config.blank ){
+    const ctxMain = document.getElementById("tilesCanvas");
+
+    //Create a grid of blank cells for the background
+    var cbg = document.createElement('canvas');
+    cbg.width = ctxMain.width;
+    cbg.height = ctxMain.height;
+    var ctxbg = cbg.getContext('2d');
+    var [blankX, blankY] = tileFromTileId( config.blankId );
+
+    for( x = 0; x < config.gridWidth; ++x ){
+      for( y = 0; y < config.gridHeight; ++y ){
+        drawTile( ctxbg, tilesMain, config.tileWidth, config.tileHeight, x, y, blankX, blankY );
+      }
+    }
+
+    config.blank = cbg;
+  }
+
+  return config.blank;
+}
+
 
 function sendKey(k){
   //Stop next moves, until the server responds
@@ -39,7 +84,10 @@ function runWebSocket(userName)
     cmd = JSON.parse(m);
 
     switch( cmd.cmd ){
-      case "config":
+      case "config": {
+        config.tiles = {};
+        config.blankId = cmd.data.blankId;
+
         //Load keys
         config.help = "";
         for( var i in cmd.data.keys ){
@@ -51,14 +99,29 @@ function runWebSocket(userName)
 
         sendCmd("redraw", gridSizeStr());
         break;
-        
-      case "log":
+      }
+      
+      case "log": {
         console.log( cmd.message );
         break;
+      }
         
-      case "error":
+      case "error": {
         alert( cmd.message );
         break;
+      }
+
+      case "draw": {
+        config.drawId = Math.random();
+        
+        const colWidth = cmd.screenWidth;
+        const ctx = document.getElementById("tilesCanvas").getContext("2d");
+
+        //Draw background image of blank tiles
+        ctx.drawImage( getCachedBlankCanvas(), 0, 0 );
+
+        break;
+      }
     }
     
     Mousetrap.unpause();

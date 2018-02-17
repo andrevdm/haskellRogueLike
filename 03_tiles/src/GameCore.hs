@@ -14,7 +14,7 @@ import qualified Data.Aeson as Ae
 import           Control.Lens.TH (makeLenses)
 
 import qualified GameHost as Host
-
+import qualified EntityType as E
 
 data Player = Player { _plConn :: Host.Connection
                      , _plScreenSize :: !(Int, Int)
@@ -27,29 +27,50 @@ data World = World { _wdPlayer :: !Player
 newtype Config = Config { _cfgKeys :: Map Text Text
                         }
 
+data Tile = Tile { _tlName :: !Text
+                 , _tlPic :: !(Int, Int)
+                 , _tlId :: !Int
+                 } deriving (Show, Eq, Ord)
+
+data Entity = Entity { _enType :: !E.EntityType
+                     , _enTile :: !Tile
+                     , _enProps :: !(Map Text Text)
+                     , _enAttribs :: !(Map Text Int)
+                     } deriving (Show, Eq, Ord)
+
+
 makeLenses ''World
 makeLenses ''Config
 makeLenses ''Player
+makeLenses ''Entity
+makeLenses ''Tile
 
 
-data UiMessage = UiMessage { umCmd :: Text
-                           , umMessage :: Text
+data UiMessage = UiMessage { umCmd :: !Text
+                           , umMessage :: !Text
                            }
                            deriving (Generic)
   
-data UiConfig = UiConfig { ucCmd :: Text
-                         , ucData :: UiConfigData
+data UiConfig = UiConfig { ucCmd :: !Text
+                         , ucData :: !UiConfigData
                          }
                          deriving (Generic)
 
-newtype UiConfigData = UiConfigData { udKeys :: [UiKey]
-                                    }
-                                    deriving (Generic)
+data UiConfigData = UiConfigData { udKeys :: ![UiKey]
+                                 , udBlankId :: !Int
+                                 }
+                                 deriving (Generic)
 
-data UiKey = UiKey { ukShortcut :: Text
-                   , ukAction :: Text
+data UiKey = UiKey { ukShortcut :: !Text
+                   , ukAction :: !Text
                    }
                    deriving (Generic)
+
+
+data UiDrawCommand = UiDrawCommand
+                     { drCmd :: !Text
+                     , drScreenWidth :: !Int
+                     } deriving (Generic)
 
 
 instance Ae.ToJSON UiMessage where
@@ -62,6 +83,9 @@ instance Ae.ToJSON UiConfigData where
   toJSON = Ae.genericToJSON Ae.defaultOptions { Ae.fieldLabelModifier = renField 2 True }
 
 instance Ae.ToJSON UiKey where
+  toJSON = Ae.genericToJSON Ae.defaultOptions { Ae.fieldLabelModifier = renField 2 True }
+
+instance Ae.ToJSON UiDrawCommand where
   toJSON = Ae.genericToJSON Ae.defaultOptions { Ae.fieldLabelModifier = renField 2 True }
 
 

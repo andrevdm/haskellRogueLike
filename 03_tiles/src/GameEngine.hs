@@ -11,13 +11,16 @@ import qualified Data.Text.Encoding as TxtE
 import qualified Data.Aeson.Text.Extended as Ae
 import qualified Data.ByteString.Lazy as BSL
 import qualified Codec.Compression.BZip as Bz
-import           Control.Lens ((^.), (.~), (%~))
+import           Control.Lens (_1, (^.), (.~), (%~))
 import           Control.Exception.Safe (finally)
-import           Control.Concurrent.STM (atomically, newTVar, modifyTVar', TVar)
+import           Control.Concurrent.STM (atomically, readTVar, newTVar, modifyTVar', TVar)
 
 import           GameCore
 import qualified GameHost as Host
 import           GameHost (conSendData, conReceiveText)
+import qualified Entities as E
+import qualified EntityType as E
+
 
 runGame :: IO ()
 runGame = Host.runHost manageConnection
@@ -89,7 +92,9 @@ runCmd conn worldV cmd cmdData =
         Nothing -> sendError conn "missing / invalid screen size"
         Just (sx, sy) -> do
           updatePlayer (plScreenSize .~ (sx, sy))
-          sendLog conn $ "TODO: " <> cmd
+          w <- atomically $ readTVar worldV
+          drawAndSend w
+          sendLog conn "draw"
       
     "key" ->
       sendLog conn $ "TODO: " <> cmd <> ": " <> show cmdData
@@ -118,7 +123,9 @@ sendConfig conn config =
 
 buildConfig :: Config -> UiConfigData
 buildConfig cfg =
-  UiConfigData $ buildKeys (cfg ^. cfgKeys)
+  UiConfigData { udKeys = buildKeys (cfg ^. cfgKeys)
+               , udBlankId = E.getTile E.Blank ^. tlId
+               }
 
   where
     buildKeys ks = buildKey <$> Map.toList ks
@@ -142,4 +149,9 @@ parseScreenSize cmd = do
   pure (x, y)
 
 
-  
+drawAndSend :: World -> IO ()
+drawAndSend world = do
+  let cmd = Ae.encodeText UiDrawCommand { drCmd = "draw"
+                                        , drScreenWidth = world ^. wdPlayer ^. plScreenSize ^. _1
+                                        }
+  sendData (world ^. wdPlayer ^. plConn) cmd
