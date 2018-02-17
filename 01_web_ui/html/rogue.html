@@ -1,0 +1,46 @@
+<html>
+  <head>
+    <title>RogueLike</title>
+    <style type="text/css">
+      body {
+        margin:0;
+        padding:0;
+        background: black;
+      }
+      canvas {
+        display:block;
+        width: 100%;
+        height: 100%
+      }
+
+      .container {
+        height: auto;
+        overflow: hidden;
+        padding: 0px;
+        margin: 0px;
+        height: 100%;
+      }
+
+      .title {
+        font-weight: bold;
+      }
+
+    </style>
+
+    <script src="bzip2.js"></script>
+    <script src="mousetrap.min.js"></script>
+    <script src="mousetrap.pause.min.js"></script>
+    <script src="ramda.min.js"></script>
+    <script src="rogue.js"></script>
+  </head>
+  <body onload="start()">
+    
+    <div id="main" width="100%" class="container">
+      <canvas id="tilesCanvas" style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas>
+
+      <!-- layer for mouse clicks etc, on top of all drawing layers -->
+      <div id="topInteractionLayer" style="display:block; position: absolute; left: 0; top: 0; z-index: 1000;"></div>
+    </div>
+  </body>
+  
+</html>

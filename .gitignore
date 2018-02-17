@@ -1,0 +1,6 @@
+.stack-work/
+*#*.hs#
+cfd.csv
+cfd.plot
+ageHeatMap.*
+.vscode/*
