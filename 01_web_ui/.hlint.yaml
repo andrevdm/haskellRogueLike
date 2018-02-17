@@ -35,7 +35,10 @@
 # - error: {lhs: "wibbleMany [x]", rhs: wibbleOne x}
 - error: {lhs: foldl x, rhs: foldl' x}
 - error: {lhs: modifyTVar x, rhs: modifyTVar' x}
-- ignore: {name: Eta reduce}
+- ignore: {name: Use String}
+- error: {lhs: sum x, rhs: foldl' (+) 0 x}
+#- ignore: {name: Eta reduce}
+
 
 # Turn on hints that are off by default
 #

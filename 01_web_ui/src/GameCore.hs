@@ -24,8 +24,8 @@ data World = World { _wdPlayer :: !Player
                    , _wdConfig :: !Config
                    }
 
-data Config = Config { _cfgKeys :: !(Map Text Text)
-                     }
+newtype Config = Config { _cfgKeys :: Map Text Text
+                        }
 
 makeLenses ''World
 makeLenses ''Config
@@ -42,9 +42,9 @@ data UiConfig = UiConfig { ucCmd :: Text
                          }
                          deriving (Generic)
 
-data UiConfigData = UiConfigData { udKeys :: [UiKey]
-                                 }
-                                 deriving (Generic)
+newtype UiConfigData = UiConfigData { udKeys :: [UiKey]
+                                    }
+                                    deriving (Generic)
 
 data UiKey = UiKey { ukShortcut :: Text
                    , ukAction :: Text
