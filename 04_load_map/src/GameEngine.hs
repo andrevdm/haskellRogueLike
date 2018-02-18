@@ -7,7 +7,6 @@ module GameEngine where
 import Protolude hiding (Map)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import qualified Data.List as Lst
 import qualified Data.List.Index as Lst
 import qualified Data.Text as Txt
 import qualified Data.Text.IO as Txt
