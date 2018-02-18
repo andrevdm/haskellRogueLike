@@ -18,14 +18,17 @@ import qualified EntityType as E
 
 data Player = Player { _plConn :: Host.Connection
                      , _plScreenSize :: !(Int, Int)
+                     , _plWorldTopLeft :: !WorldPos
                      }
 
 data World = World { _wdPlayer :: !Player
                    , _wdConfig :: !Config
+                   , _wdMap :: !(Map WorldPos Entity)
                    }
 
 newtype Config = Config { _cfgKeys :: Map Text Text
                         }
+
 
 data Tile = Tile { _tlName :: !Text
                  , _tlPic :: !(Int, Int)
@@ -73,6 +76,7 @@ data UiKey = UiKey { ukShortcut :: !Text
 data UiDrawCommand = UiDrawCommand
                      { drCmd :: !Text
                      , drScreenWidth :: !Int
+                     , drMapData :: ![(Int, Int, Int)]
                      } deriving (Generic)
 
 

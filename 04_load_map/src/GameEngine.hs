@@ -7,8 +7,10 @@ module GameEngine where
 import Protolude hiding (Map)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import qualified Data.List as Lst
 import qualified Data.List.Index as Lst
 import qualified Data.Text as Txt
+import qualified Data.Text.IO as Txt
 import qualified Data.Text.Encoding as TxtE
 import qualified Data.Aeson.Text.Extended as Ae
 import qualified Data.ByteString.Lazy as BSL
@@ -33,8 +35,10 @@ manageConnection conn = do
   initCmd <- conn ^. conReceiveText 
 
   case parseCommand initCmd of
-    Just ("init", cmdData) ->
-      case initialiseConnection conn cmdData of
+    Just ("init", cmdData) -> do
+      mapData <- Txt.readFile "worlds/simple.csv"
+      
+      case initialiseConnection conn cmdData mapData of
         Right world -> do
           worldV <- atomically $ newTVar world
           sendConfig conn $ world ^. wdConfig
@@ -61,27 +65,33 @@ manageConnection conn = do
         _ -> Nothing
       
 
-initialiseConnection :: Host.Connection -> [Text] -> Either Text World
-initialiseConnection conn cmdData = 
+initialiseConnection :: Host.Connection -> [Text] -> Text -> Either Text World
+initialiseConnection conn cmdData mapData = 
   case parseScreenSize cmdData of
     Nothing ->
       Left "missing / invalid screen size"
 
     Just (width, height) ->
-      Right $ bootWorld conn (width, height) 
+      Right $ bootWorld conn (width, height) mapData
 
 
-bootWorld :: Host.Connection -> (Int, Int) -> World
-bootWorld conn screenSize = 
+bootWorld :: Host.Connection -> (Int, Int) -> Text -> World
+bootWorld conn screenSize mapData = 
+  let config = mkConfig in
+   
   World { _wdPlayer = mkPlayer
-        , _wdConfig = mkConfig
+        , _wdConfig = config
+        , _wdMap = loadWorld E.loadTexts mapData
         }
   where
     mkConfig =
       Config { _cfgKeys = Map.fromList [("t", "test")] }
 
     mkPlayer =
-      Player conn screenSize
+      Player { _plConn = conn
+             , _plScreenSize = screenSize
+             , _plWorldTopLeft = WorldPos (0, 0)
+             }
     
 
 runCmd :: Host.Connection -> TVar World -> Text -> [Text] -> IO ()
@@ -151,10 +161,17 @@ parseScreenSize cmd = do
 
 drawAndSend :: World -> IO ()
 drawAndSend world = do
+  let playerTiles = drawTilesForPlayer (world ^. wdPlayer) (world ^. wdMap) 
+  
   let cmd = Ae.encodeText UiDrawCommand { drCmd = "draw"
                                         , drScreenWidth = world ^. wdPlayer ^. plScreenSize ^. _1
+                                        , drMapData = mkDrawMapData <$> Map.toList playerTiles
                                         }
   sendData (world ^. wdPlayer ^. plConn) cmd
+
+  where
+    mkDrawMapData :: (PlayerPos, Tile) -> (Int, Int, Int)
+    mkDrawMapData (PlayerPos (x, y), tile) = (x, y, tile ^. tlId)
 
   
 loadWorld :: Map Text Entity -> Text -> Map WorldPos Entity
@@ -189,3 +206,31 @@ playerCoordToWorld (WorldPos (worldTopX, worldTopY)) (PlayerPos (playerX, player
 worldCoordToPlayer :: WorldPos -> WorldPos -> PlayerPos
 worldCoordToPlayer (WorldPos (worldTopX, worldTopY)) (WorldPos (worldX, worldY)) =
    PlayerPos (worldX - worldTopX, -(worldY - worldTopY))
+
+  
+drawTilesForPlayer :: Player -> Map WorldPos Entity -> Map PlayerPos Tile
+drawTilesForPlayer player entityMap =
+  -- Top left of player's grid
+  let (WorldPos (topX, topY)) = player ^. plWorldTopLeft in
+
+  -- Players screen/grid dimensions
+  let (screenX, screenY) = player ^. plScreenSize in
+
+  -- Bottom right corner
+  let (bottomX, bottomY) = (topX + screenX, topY - screenY) in
+
+    -- Filter out blank
+  let noEmptyMap = Map.filter (\e -> e ^. enTile ^. tlName /= "blank") entityMap in
+
+  -- Only get the entitys that are at positions on the player's screen
+  let visibleEntitys = Map.filterWithKey (inView topX topY bottomX bottomY) noEmptyMap in
+
+  -- Get the tile for each entity
+  let tileMap = (^. enTile) <$> visibleEntitys in
+
+  -- Get it with player positions
+  Map.mapKeys (worldCoordToPlayer $ player ^. plWorldTopLeft) tileMap
+
+  where
+    inView topX topY bottomX bottomY (WorldPos (x, y)) _ =
+      x >= topX && x < bottomX && y > bottomY && y <= topY

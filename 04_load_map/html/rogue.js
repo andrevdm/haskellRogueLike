@@ -120,6 +120,14 @@ function runWebSocket(userName)
         //Draw background image of blank tiles
         ctx.drawImage( getCachedBlankCanvas(), 0, 0 );
 
+        R.forEach( ([atX, atY, tid]) => {
+          const [tX, tY] = tileFromTileId( tid );
+          
+          //function drawTile( ctx, img, twidth, theight, dx, dy, trow, tcol ){
+          drawTile( ctx, tilesMain, config.tileWidth, config.tileHeight, atX, atY, tX, tY );
+
+        }, cmd.mapData );
+
         break;
       }
     }
