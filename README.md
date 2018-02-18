@@ -12,7 +12,6 @@
 
 TODO
  - Next (in order)
-   - Moving
    - Collisions
    - Layers (actors above entities)
      - Note that actor is show over background fine, but not over other entity
