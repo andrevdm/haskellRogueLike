@@ -4,6 +4,7 @@
    - bzip2
    - mousetrap + mousetrap pause
    - canvas + interaction layer
+   - pause to prevent multiple keys
  - game host
    - web sockets and scottyApp
  - engine

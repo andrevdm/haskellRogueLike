@@ -93,7 +93,24 @@ bootWorld conn screenSize mapData std =
         }
   where
     mkConfig =
-      Config { _cfgKeys = Map.fromList [("t", "test")] }
+      Config { _cfgKeys = Map.fromList [ ("up"      , "Move:up")
+                                       , ("k"       , "Move:up")
+                                       , ("down"    , "Move:down")
+                                       , ("j"       , "Move:down")
+                                       , ("left"    , "Move:left")
+                                       , ("h"       , "Move:left")
+                                       , ("right"   , "Move:right")
+                                       , ("l"       , "Move:right")
+                                       , ("u"       , "Move:up-right")
+                                       , ("pageup"  , "Move:up-right")
+                                       , ("y"       , "Move:up-left")
+                                       , ("home"    , "Move:up-left")
+                                       , ("n"       , "Move:down-right")
+                                       , ("end"     , "Move:down-left")
+                                       , ("b"       , "Move:down-left")
+                                       , ("pagedown", "Move:down-right")
+                                       ]
+             }
 
     mkPlayer =
       Player { _plConn = conn
@@ -131,8 +148,13 @@ runCmd conn worldV cmd cmdData =
           drawAndSend w
           sendLog conn "draw"
       
-    "key" ->
-      sendLog conn $ "TODO: " <> cmd <> ": " <> show cmdData
+    "key" -> do
+      -- Handle the key press
+      atomically $ modifyTVar' worldV $ handleKey cmdData
+      -- Get the updated world
+      w2 <- atomically $ readTVar worldV
+      -- Draw
+      drawAndSend w2
 
     _ ->
       sendError conn $ "Unknown command: " <> cmd
@@ -278,3 +300,21 @@ drawTilesForPlayer world entityMap =
 getAllActors :: World -> [Actor]
 getAllActors world =
   world ^. wdPlayer ^. plActor : Map.elems (world ^. wdActors)
+
+
+handleKey :: [Text] -> World -> World
+handleKey (cmd:_) world = 
+  let (dx, dy) = 
+        case cmd of
+          "Move:up"         -> ( 0,  1)
+          "Move:down"       -> ( 0, -1)
+          "Move:left"       -> (-1,  0)
+          "Move:right"      -> ( 1,  0)
+          "Move:up-right"   -> ( 1,  1)
+          "Move:up-left"    -> (-1,  1)
+          "Move:down-right" -> ( 1, -1)
+          "Move:down-left"  -> (-1, -1)
+          _                 -> ( 0,  0)
+  in
+  world & (wdPlayer . plActor . acWorldPos) %~ (\(WorldPos (x, y)) -> WorldPos (x + dx, y + dy))
+handleKey _ world = world

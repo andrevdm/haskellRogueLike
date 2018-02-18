@@ -16,11 +16,12 @@ TODO
    - Layers (actors above entities)
      - Note that actor is show over background fine, but not over other entity
      - Browser handles transparency so use it for layers
+   - Scrolling the viewport
 
  - unordered
+   - story (change move player to be a story action)
    - fov, darkness, breshenham
    - energy
-   - story
    - inventory
    - utility
    - memory
