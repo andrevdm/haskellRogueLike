@@ -4,20 +4,24 @@ all: build test lint
 build:
 	 @$(MAKE) -C 01_web_ui build
 	 @$(MAKE) -C 03_tiles build
+	 @$(MAKE) -C 04_load_map build
 
 .PHONY: setup
 setup:
 	 @$(MAKE) -C 01_web_ui setup
 	 @$(MAKE) -C 03_tiles setup
+	 @$(MAKE) -C 04_load_map setup
 
 .PHONY: test
 test:
 	 @$(MAKE) -C 01_web_ui test
 	 @$(MAKE) -C 03_tiles test
+	 @$(MAKE) -C 04_load_map test
 
 .PHONY: lint
 lint:
 	 @$(MAKE) -C 01_web_ui lint
 	 @$(MAKE) -C 03_tiles lint
+	 @$(MAKE) -C 04_load_map lint
 
 
