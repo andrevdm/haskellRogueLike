@@ -16,7 +16,7 @@ import           Control.Lens.TH (makeLenses)
 import qualified GameHost as Host
 import qualified EntityType as E
 
-data Player = Player { _plConn :: Host.Connection
+data Player = Player { _plConn :: !Host.Connection
                      , _plScreenSize :: !(Int, Int)
                      }
 
