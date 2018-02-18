@@ -4,7 +4,7 @@
 
 module GameEngine where
 
-import Protolude hiding (Map, finally)
+import Protolude hiding (Map)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Txt
 import qualified Data.Text.Encoding as TxtE
@@ -12,7 +12,6 @@ import qualified Data.Aeson.Text.Extended as Ae
 import qualified Data.ByteString.Lazy as BSL
 import qualified Codec.Compression.BZip as Bz
 import           Control.Lens ((^.), (.~), (%~))
-import           Control.Exception.Safe (finally)
 import           Control.Concurrent.STM (atomically, newTVar, modifyTVar', TVar)
 
 import           GameCore
@@ -29,16 +28,14 @@ manageConnection conn = do
 
   case parseCommand initCmd of
     Just ("init", cmdData) ->
-      finally
-        (case initialiseConnection conn cmdData of
-           Right world -> do
-            worldV <- atomically $ newTVar world
-            sendConfig conn $ world ^. wdConfig
-            runConnection worldV
-           Left e ->
-             sendError conn e)
-        
-        (putText "logout: ")
+      case initialiseConnection conn cmdData of
+        Right world -> do
+         worldV <- atomically $ newTVar world
+         sendConfig conn $ world ^. wdConfig
+         runConnection worldV
+        Left e ->
+          sendError conn e
+          
     _ ->
       pass
 
