@@ -39,6 +39,7 @@ library
                      , warp
                      , websockets
                      , ilist
+                     , random
   default-language:    Haskell2010
 
 executable rogueActors-exe

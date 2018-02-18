@@ -1,10 +1,10 @@
 Common subdirectories: ../03_tiles/src/Data and ./src/Data
 diff -w -B -a -d -u -b ../03_tiles/src/GameCore.hs ./src/GameCore.hs
---- ../03_tiles/src/GameCore.hs	2018-02-17 18:16:33.754041291 +0200
-+++ ./src/GameCore.hs	2018-02-18 11:04:50.393906774 +0200
+--- ../03_tiles/src/GameCore.hs	2018-02-18 15:37:39.082266617 +0200
++++ ./src/GameCore.hs	2018-02-18 15:37:27.344925222 +0200
 @@ -18,10 +18,12 @@
  
- data Player = Player { _plConn :: Host.Connection
+ data Player = Player { _plConn :: !Host.Connection
                       , _plScreenSize :: !(Int, Int)
 +                     , _plWorldTopLeft :: !WorldPos
                       }
@@ -35,14 +35,13 @@ diff -w -B -a -d -u -b ../03_tiles/src/GameCore.hs ./src/GameCore.hs
  
 diff -w -B -a -d -u -b ../03_tiles/src/GameEngine.hs ./src/GameEngine.hs
 --- ../03_tiles/src/GameEngine.hs	2018-02-18 10:10:17.309202811 +0200
-+++ ./src/GameEngine.hs	2018-02-18 11:07:50.154648730 +0200
-@@ -5,13 +5,18 @@
++++ ./src/GameEngine.hs	2018-02-18 17:50:42.447800124 +0200
+@@ -5,13 +5,17 @@
  module GameEngine where
  
  import Protolude hiding (Map)
 +import           Data.Map.Strict (Map)
  import qualified Data.Map.Strict as Map
-+import qualified Data.List as Lst
 +import qualified Data.List.Index as Lst
  import qualified Data.Text as Txt
 +import qualified Data.Text.IO as Txt
@@ -55,7 +54,7 @@ diff -w -B -a -d -u -b ../03_tiles/src/GameEngine.hs ./src/GameEngine.hs
  import           Control.Concurrent.STM (atomically, readTVar, newTVar, modifyTVar', TVar)
  
  import           GameCore
-@@ -30,8 +35,10 @@
+@@ -30,8 +34,10 @@
    initCmd <- conn ^. conReceiveText 
  
    case parseCommand initCmd of
@@ -68,7 +67,7 @@ diff -w -B -a -d -u -b ../03_tiles/src/GameEngine.hs ./src/GameEngine.hs
           Right world -> do
            worldV <- atomically $ newTVar world
            sendConfig conn $ world ^. wdConfig
-@@ -58,27 +65,33 @@
+@@ -58,27 +64,33 @@
          _ -> Nothing
        
  
@@ -109,11 +108,11 @@ diff -w -B -a -d -u -b ../03_tiles/src/GameEngine.hs ./src/GameEngine.hs
      
  
  runCmd :: Host.Connection -> TVar World -> Text -> [Text] -> IO ()
-@@ -148,7 +161,76 @@
+@@ -148,7 +160,79 @@
  
  drawAndSend :: World -> IO ()
  drawAndSend world = do
-+  let playerTiles = drawTilesForPlayer (world ^. wdPlayer) (world ^. wdMap) 
++  let playerTiles = drawTilesForPlayer world (world ^. wdMap) 
 +  
    let cmd = Ae.encodeText UiDrawCommand { drCmd = "draw"
                                          , drScreenWidth = world ^. wdPlayer ^. plScreenSize ^. _1
@@ -160,26 +159,29 @@ diff -w -B -a -d -u -b ../03_tiles/src/GameEngine.hs ./src/GameEngine.hs
 +   PlayerPos (worldX - worldTopX, -(worldY - worldTopY))
 +
 +  
-+drawTilesForPlayer :: Player -> Map WorldPos Entity -> Map PlayerPos Tile
-+drawTilesForPlayer player entityMap =
-+  -- Top left of player's grid
-+  let (WorldPos (topX, topY)) = player ^. plWorldTopLeft in
++drawTilesForPlayer :: World -> Map WorldPos Entity -> Map PlayerPos Tile
++drawTilesForPlayer world entityMap =
++  let
++    player = world ^. wdPlayer
++    
++    -- Top left of player's grid
++    (WorldPos (topX, topY)) = player ^. plWorldTopLeft
 +
-+  -- Players screen/grid dimensions
-+  let (screenX, screenY) = player ^. plScreenSize in
++    -- Players screen/grid dimensions
++    (screenX, screenY) = player ^. plScreenSize
 +
-+  -- Bottom right corner
-+  let (bottomX, bottomY) = (topX + screenX, topY - screenY) in
++    -- Bottom right corner
++    (bottomX, bottomY) = (topX + screenX, topY - screenY)
 +
-+    -- Filter out blank
-+  let noEmptyMap = Map.filter (\e -> e ^. enTile ^. tlName /= "blank") entityMap in
++      -- Filter out blank
++    noEmptyMap = Map.filter (\e -> e ^. enTile ^. tlName /= "blank") entityMap
 +
-+  -- Only get the entitys that are at positions on the player's screen
-+  let visibleEntitys = Map.filterWithKey (inView topX topY bottomX bottomY) noEmptyMap in
++    -- Only get the entitys that are at positions on the player's screen
++    visibleEntitys = Map.filterWithKey (inView topX topY bottomX bottomY) noEmptyMap
 +
-+  -- Get the tile for each entity
-+  let tileMap = (^. enTile) <$> visibleEntitys in
-+
++    -- Get the tile for each entity
++    tileMap = (^. enTile) <$> visibleEntitys
++  in
 +  -- Get it with player positions
 +  Map.mapKeys (worldCoordToPlayer $ player ^. plWorldTopLeft) tileMap
 +

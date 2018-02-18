@@ -8,3 +8,21 @@
   - [Code Us Some Roguelike in Haskell!](http://jamiltron.com/2012/07/Code_Us_Some_Roguelike_in_Haskell.html)
   - [Complete Roguelike Tutorial](https://lokathor.gitbooks.io/using-haskell/content/roguelike/)
   - [Haskell category on rogue basin](http://www.roguebasin.com/index.php?title=Haskell)
+
+
+TODO
+ - Next (in order)
+   - Moving
+   - Collisions
+   - Layers (actors above entities)
+     - Note that actor is show over background fine, but not over other entity
+     - Browser handles transparency so use it for layers
+
+ - unordered
+   - fov, darkness, breshenham
+   - energy
+   - story
+   - inventory
+   - utility
+   - memory
+   - combat

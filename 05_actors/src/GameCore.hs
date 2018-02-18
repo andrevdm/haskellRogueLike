@@ -11,13 +11,27 @@ import           Protolude hiding (Map)
 import qualified Data.Text as Txt
 import           Data.Map.Strict (Map)
 import qualified Data.Aeson as Ae
+import qualified System.Random as Rnd
 import           Control.Lens.TH (makeLenses)
 
 import qualified GameHost as Host
 import qualified EntityType as E
 
-data Player = Player { _plConn :: Host.Connection
+data ActorClass = ClassPlayer
+                | ClassEnemy
+                deriving (Show, Eq)
+
+newtype Aid = Aid Text deriving (Show, Eq, Ord)
+
+data Actor = Actor { _acId :: !Aid
+                   , _acClass :: !ActorClass
+                   , _acEntity :: !Entity
+                   , _acWorldPos :: !WorldPos
+                   , _acStdGen :: !Rnd.StdGen
+                   }
+
 data Player = Player { _plConn :: !Host.Connection
+                     , _plActor :: !Actor
                      , _plScreenSize :: !(Int, Int)
                      , _plWorldTopLeft :: !WorldPos
                      }
@@ -25,6 +39,7 @@ data Player = Player { _plConn :: !Host.Connection
 data World = World { _wdPlayer :: !Player
                    , _wdConfig :: !Config
                    , _wdMap :: !(Map WorldPos Entity)
+                   , _wdActors :: !(Map Aid Actor)
                    }
 
 newtype Config = Config { _cfgKeys :: Map Text Text
@@ -51,6 +66,7 @@ makeLenses ''Config
 makeLenses ''Player
 makeLenses ''Entity
 makeLenses ''Tile
+makeLenses ''Actor
 
 
 data UiMessage = UiMessage { umCmd :: !Text

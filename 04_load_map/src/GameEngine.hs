@@ -160,7 +160,7 @@ parseScreenSize cmd = do
 
 drawAndSend :: World -> IO ()
 drawAndSend world = do
-  let playerTiles = drawTilesForPlayer (world ^. wdPlayer) (world ^. wdMap) 
+  let playerTiles = drawTilesForPlayer world (world ^. wdMap) 
   
   let cmd = Ae.encodeText UiDrawCommand { drCmd = "draw"
                                         , drScreenWidth = world ^. wdPlayer ^. plScreenSize ^. _1
@@ -207,26 +207,29 @@ worldCoordToPlayer (WorldPos (worldTopX, worldTopY)) (WorldPos (worldX, worldY))
    PlayerPos (worldX - worldTopX, -(worldY - worldTopY))
 
   
-drawTilesForPlayer :: Player -> Map WorldPos Entity -> Map PlayerPos Tile
-drawTilesForPlayer player entityMap =
-  -- Top left of player's grid
-  let (WorldPos (topX, topY)) = player ^. plWorldTopLeft in
+drawTilesForPlayer :: World -> Map WorldPos Entity -> Map PlayerPos Tile
+drawTilesForPlayer world entityMap =
+  let
+    player = world ^. wdPlayer
+    
+    -- Top left of player's grid
+    (WorldPos (topX, topY)) = player ^. plWorldTopLeft
 
-  -- Players screen/grid dimensions
-  let (screenX, screenY) = player ^. plScreenSize in
+    -- Players screen/grid dimensions
+    (screenX, screenY) = player ^. plScreenSize
 
-  -- Bottom right corner
-  let (bottomX, bottomY) = (topX + screenX, topY - screenY) in
+    -- Bottom right corner
+    (bottomX, bottomY) = (topX + screenX, topY - screenY)
 
-    -- Filter out blank
-  let noEmptyMap = Map.filter (\e -> e ^. enTile ^. tlName /= "blank") entityMap in
+      -- Filter out blank
+    noEmptyMap = Map.filter (\e -> e ^. enTile ^. tlName /= "blank") entityMap
 
-  -- Only get the entitys that are at positions on the player's screen
-  let visibleEntitys = Map.filterWithKey (inView topX topY bottomX bottomY) noEmptyMap in
+    -- Only get the entitys that are at positions on the player's screen
+    visibleEntitys = Map.filterWithKey (inView topX topY bottomX bottomY) noEmptyMap
 
-  -- Get the tile for each entity
-  let tileMap = (^. enTile) <$> visibleEntitys in
-
+    -- Get the tile for each entity
+    tileMap = (^. enTile) <$> visibleEntitys
+  in
   -- Get it with player positions
   Map.mapKeys (worldCoordToPlayer $ player ^. plWorldTopLeft) tileMap
 

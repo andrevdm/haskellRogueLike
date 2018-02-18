@@ -19,6 +19,9 @@ loadTexts :: Map Text Entity
            , (E.Door      , (26, 15), Just "+")
            , (E.DoorClosed, (21, 15), Just "-")
            , (E.Wall      , ( 9, 14), Just "w")
+           , (E.Player    , ( 8,  3), Nothing)
+           , (E.Bug       , (25,  3), Nothing)
+           , (E.Snake     , (38,  4), Nothing)
            ]
   in
   let mkData (typ, pos@(x, y), l) (tiles', entities', loads') =

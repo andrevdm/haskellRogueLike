@@ -14,6 +14,7 @@ import qualified Data.Text.Encoding as TxtE
 import qualified Data.Aeson.Text.Extended as Ae
 import qualified Data.ByteString.Lazy as BSL
 import qualified Codec.Compression.BZip as Bz
+import qualified System.Random as Rnd
 import           Control.Lens (_1, (^.), (.~), (%~))
 import qualified Control.Arrow as Ar
 import           Control.Concurrent.STM (atomically, readTVar, newTVar, modifyTVar', TVar)
@@ -36,8 +37,9 @@ manageConnection conn = do
   case parseCommand initCmd of
     Just ("init", cmdData) -> do
       mapData <- Txt.readFile "worlds/simple.csv"
+      std <- Rnd.getStdGen
       
-      case initialiseConnection conn cmdData mapData of
+      case initialiseConnection conn cmdData mapData std of
         Right world -> do
           worldV <- atomically $ newTVar world
           sendConfig conn $ world ^. wdConfig
@@ -64,23 +66,30 @@ manageConnection conn = do
         _ -> Nothing
       
 
-initialiseConnection :: Host.Connection -> [Text] -> Text -> Either Text World
-initialiseConnection conn cmdData mapData = 
+initialiseConnection :: Host.Connection -> [Text] -> Text -> Rnd.StdGen -> Either Text World
+initialiseConnection conn cmdData mapData std = 
   case parseScreenSize cmdData of
     Nothing ->
       Left "missing / invalid screen size"
 
     Just (width, height) ->
-      Right $ bootWorld conn (width, height) mapData
+      Right $ bootWorld conn (width, height) mapData std
 
 
-bootWorld :: Host.Connection -> (Int, Int) -> Text -> World
-bootWorld conn screenSize mapData = 
-  let config = mkConfig in
+bootWorld :: Host.Connection -> (Int, Int) -> Text -> Rnd.StdGen -> World
+bootWorld conn screenSize mapData std = 
+  let
+    config = mkConfig
+    bug = mkEnemyActor "bug1" E.Bug (6, -2)
+    snake = mkEnemyActor "snake1" E.Snake (8, -4)
+  in
    
   World { _wdPlayer = mkPlayer
         , _wdConfig = config
         , _wdMap = loadWorld E.loadTexts mapData
+        , _wdActors = Map.fromList [ (bug ^. acId, bug)
+                                   , (snake ^. acId, snake)
+                                   ]
         }
   where
     mkConfig =
@@ -90,7 +99,24 @@ bootWorld conn screenSize mapData =
       Player { _plConn = conn
              , _plScreenSize = screenSize
              , _plWorldTopLeft = WorldPos (0, 0)
+             , _plActor = mkPlayersActor
              }
+
+    mkPlayersActor =
+      Actor { _acId = Aid "player"
+            , _acClass = ClassPlayer
+            , _acEntity = E.getEntity E.Player
+            , _acWorldPos = WorldPos (1, -1)
+            , _acStdGen = std
+            }
+
+    mkEnemyActor aid e (x, y) =
+      Actor { _acId = Aid aid
+            , _acClass = ClassEnemy
+            , _acEntity = E.getEntity e
+            , _acWorldPos = WorldPos (x, y)
+            , _acStdGen = std
+            }
     
 
 runCmd :: Host.Connection -> TVar World -> Text -> [Text] -> IO ()
@@ -160,7 +186,7 @@ parseScreenSize cmd = do
 
 drawAndSend :: World -> IO ()
 drawAndSend world = do
-  let playerTiles = drawTilesForPlayer (world ^. wdPlayer) (world ^. wdMap) 
+  let playerTiles = drawTilesForPlayer world (world ^. wdMap) 
   
   let cmd = Ae.encodeText UiDrawCommand { drCmd = "draw"
                                         , drScreenWidth = world ^. wdPlayer ^. plScreenSize ^. _1
@@ -207,29 +233,48 @@ worldCoordToPlayer (WorldPos (worldTopX, worldTopY)) (WorldPos (worldX, worldY))
    PlayerPos (worldX - worldTopX, -(worldY - worldTopY))
 
   
-drawTilesForPlayer :: Player -> Map WorldPos Entity -> Map PlayerPos Tile
-drawTilesForPlayer player entityMap =
-  -- Top left of player's grid
-  let (WorldPos (topX, topY)) = player ^. plWorldTopLeft in
+drawTilesForPlayer :: World -> Map WorldPos Entity -> Map PlayerPos Tile
+drawTilesForPlayer world entityMap =
+  let
+    player = world ^. wdPlayer
+    
+    -- Top left of player's grid
+    (WorldPos (topX, topY)) = player ^. plWorldTopLeft 
 
-  -- Players screen/grid dimensions
-  let (screenX, screenY) = player ^. plScreenSize in
+    -- Players screen/grid dimensions
+    (screenX, screenY) = player ^. plScreenSize 
 
-  -- Bottom right corner
-  let (bottomX, bottomY) = (topX + screenX, topY - screenY) in
+    -- Bottom right corner
+    (bottomX, bottomY) = (topX + screenX, topY - screenY) 
 
     -- Filter out blank
-  let noEmptyMap = Map.filter (\e -> e ^. enTile ^. tlName /= "blank") entityMap in
+    noEmptyMap = Map.filter (\e -> e ^. enTile ^. tlName /= "blank") entityMap 
 
-  -- Only get the entitys that are at positions on the player's screen
-  let visibleEntitys = Map.filterWithKey (inView topX topY bottomX bottomY) noEmptyMap in
+    -- Add the actors to the map.
+    -- Notice that this will replace whatever entity was there (for this draw)
+    -- This fold works by
+    --    - Starting with the map of entities that are not blank
+    --    - Inserting each actor into the updated map (the accumulator)
+    -- getAllActors is called to get the player's actor and all other actors
+    noEmptyMapWithActors = foldr
+                           (\actor accum -> Map.insert (actor ^. acWorldPos) (actor ^. acEntity) accum)
+                           noEmptyMap
+                           (getAllActors world)
 
-  -- Get the tile for each entity
-  let tileMap = (^. enTile) <$> visibleEntitys in
+    -- Only get the entitys that are at positions on the player's screen
+    visibleEntitys = Map.filterWithKey (inView topX topY bottomX bottomY) noEmptyMapWithActors
 
+    -- Get the tile for each entity
+    tileMap = (^. enTile) <$> visibleEntitys 
+  in
   -- Get it with player positions
   Map.mapKeys (worldCoordToPlayer $ player ^. plWorldTopLeft) tileMap
 
   where
     inView topX topY bottomX bottomY (WorldPos (x, y)) _ =
       x >= topX && x < bottomX && y > bottomY && y <= topY
+
+
+getAllActors :: World -> [Actor]
+getAllActors world =
+  world ^. wdPlayer ^. plActor : Map.elems (world ^. wdActors)
