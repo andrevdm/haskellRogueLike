@@ -60,6 +60,7 @@ data Entity = Entity { _enType :: !E.EntityType
 newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
 newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
 
+newtype RogueAction = ActMovePlayer (Int, Int)
 
 makeLenses ''World
 makeLenses ''Config

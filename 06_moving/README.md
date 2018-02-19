@@ -4,9 +4,10 @@
  - js
  - haskell
    - Adding keys, no JS changes!
+   - Adding RogueActions type for future use.
+     - Not all actions result in a delta (x,y) so handleKey returns an action to be run
+     - Multiple actions per key possible, e.g. moving moves + changes some state
    - problems
-     - handleKey works for movement but nothing else i.e. has (dx,dy) result
-       next section shows how to fix this
      - no collision detection
      - completely hides entity standing on
      - moves off screen

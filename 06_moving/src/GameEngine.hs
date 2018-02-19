@@ -150,7 +150,7 @@ runCmd conn worldV cmd cmdData =
       
     "key" -> do
       -- Handle the key press
-      atomically $ modifyTVar' worldV $ handleKey cmdData
+      atomically $ modifyTVar' worldV (\w -> runActions w $ handleKey cmdData)
       -- Get the updated world
       w2 <- atomically $ readTVar worldV
       -- Draw
@@ -302,19 +302,28 @@ getAllActors world =
   world ^. wdPlayer ^. plActor : Map.elems (world ^. wdActors)
 
 
-handleKey :: [Text] -> World -> World
-handleKey (cmd:_) world = 
-  let (dx, dy) = 
-        case cmd of
-          "Move:up"         -> ( 0,  1)
-          "Move:down"       -> ( 0, -1)
-          "Move:left"       -> (-1,  0)
-          "Move:right"      -> ( 1,  0)
-          "Move:up-right"   -> ( 1,  1)
-          "Move:up-left"    -> (-1,  1)
-          "Move:down-right" -> ( 1, -1)
-          "Move:down-left"  -> (-1, -1)
-          _                 -> ( 0,  0)
-  in
-  world & (wdPlayer . plActor . acWorldPos) %~ (\(WorldPos (x, y)) -> WorldPos (x + dx, y + dy))
-handleKey _ world = world
+handleKey :: [Text] -> [RogueAction]
+handleKey (cmd:_) = 
+  case cmd of
+    "Move:up"         -> [ActMovePlayer ( 0,  1)]
+    "Move:down"       -> [ActMovePlayer ( 0, -1)]
+    "Move:left"       -> [ActMovePlayer (-1,  0)]
+    "Move:right"      -> [ActMovePlayer ( 1,  0)]
+    "Move:up-right"   -> [ActMovePlayer ( 1,  1)]
+    "Move:up-left"    -> [ActMovePlayer (-1,  1)]
+    "Move:down-right" -> [ActMovePlayer ( 1, -1)]
+    "Move:down-left"  -> [ActMovePlayer (-1, -1)]
+    _                 -> []
+handleKey _ = []
+
+
+runActions :: World -> [RogueAction] -> World
+runActions world actions =
+  foldl' runAction world actions
+
+
+runAction :: World -> RogueAction -> World
+runAction world action =
+  case action of
+    ActMovePlayer (dx, dy) ->
+      world & (wdPlayer . plActor . acWorldPos) %~ (\(WorldPos (x, y)) -> WorldPos (x + dx, y + dy))

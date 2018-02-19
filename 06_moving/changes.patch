@@ -1,7 +1,18 @@
 Common subdirectories: ../05_actors/src/Data and ./src/Data
+diff -w -B -a -d -u -b ../05_actors/src/GameCore.hs ./src/GameCore.hs
+--- ../05_actors/src/GameCore.hs	2018-02-18 17:43:02.267103014 +0200
++++ ./src/GameCore.hs	2018-02-19 07:56:12.674549399 +0200
+@@ -60,6 +60,7 @@
+ newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
+ newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
+ 
++newtype RogueAction = ActMovePlayer (Int, Int)
+ 
+ makeLenses ''World
+ makeLenses ''Config
 diff -w -B -a -d -u -b ../05_actors/src/GameEngine.hs ./src/GameEngine.hs
 --- ../05_actors/src/GameEngine.hs	2018-02-18 17:54:50.574217847 +0200
-+++ ./src/GameEngine.hs	2018-02-18 21:23:40.735228481 +0200
++++ ./src/GameEngine.hs	2018-02-19 07:53:04.157136562 +0200
 @@ -93,7 +93,24 @@
          }
    where
@@ -36,7 +47,7 @@ diff -w -B -a -d -u -b ../05_actors/src/GameEngine.hs ./src/GameEngine.hs
 -      sendLog conn $ "TODO: " <> cmd <> ": " <> show cmdData
 +    "key" -> do
 +      -- Handle the key press
-+      atomically $ modifyTVar' worldV $ handleKey cmdData
++      atomically $ modifyTVar' worldV (\w -> runActions w $ handleKey cmdData)
 +      -- Get the updated world
 +      w2 <- atomically $ readTVar worldV
 +      -- Draw
@@ -44,25 +55,34 @@ diff -w -B -a -d -u -b ../05_actors/src/GameEngine.hs ./src/GameEngine.hs
  
      _ ->
        sendError conn $ "Unknown command: " <> cmd
-@@ -278,3 +300,21 @@
+@@ -278,3 +300,30 @@
  getAllActors :: World -> [Actor]
  getAllActors world =
    world ^. wdPlayer ^. plActor : Map.elems (world ^. wdActors)
 +
 +
-+handleKey :: [Text] -> World -> World
-+handleKey (cmd:_) world = 
-+  let (dx, dy) = 
-+        case cmd of
-+          "Move:up"         -> ( 0,  1)
-+          "Move:down"       -> ( 0, -1)
-+          "Move:left"       -> (-1,  0)
-+          "Move:right"      -> ( 1,  0)
-+          "Move:up-right"   -> ( 1,  1)
-+          "Move:up-left"    -> (-1,  1)
-+          "Move:down-right" -> ( 1, -1)
-+          "Move:down-left"  -> (-1, -1)
-+          _                 -> ( 0,  0)
-+  in
-+  world & (wdPlayer . plActor . acWorldPos) %~ (\(WorldPos (x, y)) -> WorldPos (x + dx, y + dy))
-+handleKey _ world = world
++handleKey :: [Text] -> [RogueAction]
++handleKey (cmd:_) = 
++  case cmd of
++    "Move:up"         -> [ActMovePlayer ( 0,  1)]
++    "Move:down"       -> [ActMovePlayer ( 0, -1)]
++    "Move:left"       -> [ActMovePlayer (-1,  0)]
++    "Move:right"      -> [ActMovePlayer ( 1,  0)]
++    "Move:up-right"   -> [ActMovePlayer ( 1,  1)]
++    "Move:up-left"    -> [ActMovePlayer (-1,  1)]
++    "Move:down-right" -> [ActMovePlayer ( 1, -1)]
++    "Move:down-left"  -> [ActMovePlayer (-1, -1)]
++    _                 -> []
++handleKey _ = []
++
++
++runActions :: World -> [RogueAction] -> World
++runActions world actions =
++  foldl' runAction world actions
++
++
++runAction :: World -> RogueAction -> World
++runAction world action =
++  case action of
++    ActMovePlayer (dx, dy) ->
++      world & (wdPlayer . plActor . acWorldPos) %~ (\(WorldPos (x, y)) -> WorldPos (x + dx, y + dy))

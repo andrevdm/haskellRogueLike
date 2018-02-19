@@ -37,7 +37,7 @@
 - error: {lhs: modifyTVar x, rhs: modifyTVar' x}
 - ignore: {name: Use String}
 - error: {lhs: sum x, rhs: foldl' (+) 0 x}
-#- ignore: {name: Eta reduce}
+- ignore: {name: Eta reduce}
 
 
 # Turn on hints that are off by default
