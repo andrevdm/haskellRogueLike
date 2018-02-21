@@ -42,8 +42,9 @@ data World = World { _wdPlayer :: !Player
                    , _wdActors :: !(Map Aid Actor)
                    }
 
-newtype Config = Config { _cfgKeys :: Map Text Text
-                        }
+data Config = Config { _cfgKeys :: !(Map Text Text)
+                     , _cfgMinMaxBounds :: !(Int, Int, Int, Int) -- (minX, maxX, minY, maxY)
+                    }
 
 
 data Tile = Tile { _tlName :: !Text
