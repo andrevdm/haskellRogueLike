@@ -1,0 +1,183 @@
+Common subdirectories: ../08_layers/src/Data and ./src/Data
+diff -w -B -a -d -u -b ../08_layers/src/GameCore.hs ./src/GameCore.hs
+--- ../08_layers/src/GameCore.hs	2018-02-24 10:14:00.836125289 +0200
++++ ./src/GameCore.hs	2018-02-24 11:42:08.035901655 +0200
+@@ -34,6 +34,7 @@
+                      , _plActor :: !Actor
+                      , _plScreenSize :: !(Int, Int)
+                      , _plWorldTopLeft :: !WorldPos
++                     , _plViewPortStyle :: !ViewPortStyle
+                      }
+ 
+ data World = World { _wdPlayer :: !Player
+@@ -61,7 +62,16 @@
+ newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
+ newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
+ 
+-newtype RogueAction = ActMovePlayer (Int, Int)
++data RogueAction = ActMovePlayer (Int, Int)
++                 | ActSetPlayerViewPortStyle ViewPortStyle
++
++data ViewPortStyle = ViewPortCentre
++                   | ViewPortLock PlayerPos
++                   | ViewPortScroll
++                   | ViewPortSnapCentre
++                   | ViewPortBorder Int
++                   deriving (Show, Eq)
++
+ 
+ makeLenses ''World
+ makeLenses ''Config
+diff -w -B -a -d -u -b ../08_layers/src/GameEngine.hs ./src/GameEngine.hs
+--- ../08_layers/src/GameEngine.hs	2018-02-24 10:14:22.404073758 +0200
++++ ./src/GameEngine.hs	2018-02-24 11:47:50.961214658 +0200
+@@ -109,8 +109,14 @@
+                                        , ("end"     , "Move:down-left")
+                                        , ("b"       , "Move:down-left")
+                                        , ("pagedown", "Move:down-right")
++
++                                       , ("shift+v c", "Game:ViewPort:Centre")
++                                       , ("shift+v s", "Game:ViewPort:Scroll")
++                                       , ("shift+v p", "Game:ViewPort:Snap")
++                                       , ("shift+v b", "Game:ViewPort:Border")
++                                       , ("shift+v l", "Game:ViewPort:Lock")
+                                        ]
+-             , _cfgMinMaxBounds = (0, 30, -30, 0)
++             , _cfgMinMaxBounds = (-300, 300, -300, 300)
+              }
+ 
+     mkPlayer =
+@@ -118,6 +124,7 @@
+              , _plScreenSize = screenSize
+              , _plWorldTopLeft = WorldPos (0, 0)
+              , _plActor = mkPlayersActor
++             , _plViewPortStyle = ViewPortBorder 2
+              }
+ 
+     mkPlayersActor =
+@@ -151,7 +158,7 @@
+       
+     "key" -> do
+       -- Handle the key press
+-      atomically $ modifyTVar' worldV (\w -> runActions w $ handleKey cmdData)
++      atomically $ modifyTVar' worldV (\w -> runActions w $ handleKey w cmdData)
+       -- Get the updated world
+       w2 <- atomically $ readTVar worldV
+       -- Draw
+@@ -304,8 +311,11 @@
+   world ^. wdPlayer ^. plActor : Map.elems (world ^. wdActors)
+ 
+ 
+-handleKey :: [Text] -> [RogueAction]
+-handleKey (cmd:_) = 
++handleKey :: World -> [Text] -> [RogueAction]
++handleKey world (cmd:_) = 
++  let actor = world ^. wdPlayer ^. plActor in
++  let topLeft = world ^. wdPlayer ^. plWorldTopLeft in
++
+   case cmd of
+     "Move:up"         -> [ActMovePlayer ( 0,  1)]
+     "Move:down"       -> [ActMovePlayer ( 0, -1)]
+@@ -315,8 +325,15 @@
+     "Move:up-left"    -> [ActMovePlayer (-1,  1)]
+     "Move:down-right" -> [ActMovePlayer ( 1, -1)]
+     "Move:down-left"  -> [ActMovePlayer (-1, -1)]
++
++    "Game:ViewPort:Centre" -> [ActSetPlayerViewPortStyle ViewPortCentre]
++    "Game:ViewPort:Scroll" -> [ActSetPlayerViewPortStyle ViewPortScroll]
++    "Game:ViewPort:Snap"   -> [ActSetPlayerViewPortStyle ViewPortSnapCentre]
++    "Game:ViewPort:Border" -> [ActSetPlayerViewPortStyle $ ViewPortBorder 2]
++    "Game:ViewPort:Lock"   -> [ActSetPlayerViewPortStyle $ ViewPortLock (worldCoordToPlayer topLeft $ actor ^. acWorldPos)]
++
+     _                 -> []
+-handleKey _ = []
++handleKey _ _ = []
+ 
+ 
+ runActions :: World -> [RogueAction] -> World
+@@ -330,6 +347,9 @@
+     ActMovePlayer move  ->
+       fromMaybe world $ tryMoveActor world (world ^. wdPlayer ^. plActor) move
+ 
++    ActSetPlayerViewPortStyle style ->
++      world & (wdPlayer . plViewPortStyle) .~ style
++
+ 
+ tryMoveActor :: World -> Actor -> (Int, Int) -> Maybe World
+ tryMoveActor world actor (dx, dy) =
+@@ -363,7 +383,7 @@
+       if canMove
+       then
+         let movedActor = actor & acWorldPos .~ tryWorldTo' in
+-        Just $ updateActor world movedActor
++        Just . updatePlayerViewport $ updateActor world movedActor
+       else
+         Nothing
+ 
+@@ -374,3 +394,66 @@
+   if w ^. wdPlayer ^. plActor ^. acId == (actor ^. acId)
+   then w & (wdPlayer . plActor) .~ actor                         -- update the player's actor
+   else w & wdActors %~ Map.adjust (const actor) (actor ^. acId)  -- update other actor, nop if aid not found
++
++
++-- | Update the player's view port
++updatePlayerViewport :: World -> World
++updatePlayerViewport w =
++  let p = w ^. wdPlayer in
++  w & wdPlayer .~ (p & plWorldTopLeft .~ calcViewPortTopLeft p)
++
++
++calcViewPortTopLeft :: Player -> WorldPos
++calcViewPortTopLeft player =
++  let actor = player ^. plActor in
++
++  case player ^. plViewPortStyle of
++    -- These two styles put the player in the viewport, so no need to check
++    ViewPortCentre -> centreOn (player ^. plScreenSize) (actor ^. acWorldPos)
++    ViewPortLock focus -> focusOn focus $ actor ^. acWorldPos
++
++    _ -> 
++      let tl@(WorldPos (tX, tY)) = (player ^. plWorldTopLeft) in
++      let sz@(width, height) = (player ^. plScreenSize) in
++      let (outX, outY) = distanceOutOfViewPort sz tl (actor ^. acWorldPos) in
++      
++      case player ^. plViewPortStyle of
++        ViewPortSnapCentre ->
++          if outX /= 0 || outY /= 0
++          then centreOn (player ^. plScreenSize) (actor ^. acWorldPos)
++          else player ^. plWorldTopLeft
++
++        ViewPortBorder d ->
++          let (outX', outY') = distanceOutOfViewPort
++                                 (width - d - d, height - d - d)
++                                 (WorldPos (tX + d, tY - d))
++                                 (actor ^. acWorldPos)
++          in
++          WorldPos (tX + outX', tY + outY')
++
++        _ -> -- default to ViewPortScroll
++          WorldPos (tX + outX, tY + outY)
++
++  where
++    centreOn :: (Int, Int) -> WorldPos -> WorldPos
++    centreOn (screenWidth, screenHeight) (WorldPos (wAtX, wAtY)) =
++      let (sMidX, sMidY) = (screenWidth `div` 2, screenHeight `div` 2) in
++      WorldPos (wAtX - sMidX, wAtY + sMidY)
++    
++    
++    focusOn :: PlayerPos -> WorldPos -> WorldPos
++    focusOn (PlayerPos (focusX, focusY)) (WorldPos (atX, atY)) =
++      WorldPos (atX - focusX, atY + focusY)
++      
++    
++    distanceOutOfViewPort :: (Int, Int) -> WorldPos -> WorldPos -> (Int, Int)
++    distanceOutOfViewPort (screenWidth, screenHeight) (WorldPos (topX, topY)) (WorldPos (atX, atY)) =
++      let x = if | atX <  topX               -> atX - topX
++                 | atX >= topX + screenWidth -> atX - topX - screenWidth + 1
++                 | otherwise -> 0
++      in
++      let y = if | atY >  topY                -> atY - topY
++                 | atY <= topY - screenHeight -> atY - (topY - screenHeight + 1)
++                 | otherwise -> 0
++      in
++      (x, y)

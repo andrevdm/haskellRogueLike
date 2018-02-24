@@ -12,7 +12,6 @@
 
 TODO
  - Next (in order)
-   - Scrolling the viewport
 
  - unordered
    - story (change move player to be a story action)

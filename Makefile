@@ -9,6 +9,7 @@ build:
 	 @$(MAKE) -C 06_moving build
 	 @$(MAKE) -C 07_collisions build
 	 @$(MAKE) -C 08_layers build
+	 @$(MAKE) -C 09_viewport_scroll build
 
 .PHONY: setup
 setup:
@@ -19,6 +20,7 @@ setup:
 	 @$(MAKE) -C 06_moving setup
 	 @$(MAKE) -C 07_collisions setup
 	 @$(MAKE) -C 08_layers setup
+	 @$(MAKE) -C 09_viewport_scroll setup
 
 .PHONY: test
 test:
@@ -29,6 +31,7 @@ test:
 	 @$(MAKE) -C 06_moving test
 	 @$(MAKE) -C 07_collisions test
 	 @$(MAKE) -C 08_layers test
+	 @$(MAKE) -C 09_viewport_scroll test
 
 .PHONY: lint
 lint:
@@ -39,5 +42,6 @@ lint:
 	 @$(MAKE) -C 06_moving lint
 	 @$(MAKE) -C 07_collisions lint
 	 @$(MAKE) -C 08_layers lint
+	 @$(MAKE) -C 09_viewport_scroll lint
 
 
