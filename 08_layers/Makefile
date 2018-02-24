@@ -10,6 +10,8 @@ setup:
 build:
 	stack build 
 	diff ../07_collisions/src/ ./src/ -w -B -a -d -u -b > changes.patch | true
+	diff ../07_collisions/html/rogue.html ./html/rogue.html -w -B -a -d -u -b >> changes.patch | true
+	diff ../07_collisions/html/rogue.js ./html/rogue.js -w -B -a -d -u -b >> changes.patch | true
 
 .PHONY: test
 test:

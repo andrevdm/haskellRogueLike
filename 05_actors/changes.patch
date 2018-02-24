@@ -72,7 +72,7 @@ diff -w -B -a -d -u -b ../04_load_map/src/GameCore.hs ./src/GameCore.hs
  
  data UiMessage = UiMessage { umCmd :: !Text
 diff -w -B -a -d -u -b ../04_load_map/src/GameEngine.hs ./src/GameEngine.hs
---- ../04_load_map/src/GameEngine.hs	2018-02-18 17:50:42.447800124 +0200
+--- ../04_load_map/src/GameEngine.hs	2018-02-24 10:02:28.797793166 +0200
 +++ ./src/GameEngine.hs	2018-02-18 17:54:50.574217847 +0200
 @@ -14,6 +14,7 @@
  import qualified Data.Aeson.Text.Extended as Ae

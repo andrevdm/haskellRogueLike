@@ -209,11 +209,11 @@ parseScreenSize cmd = do
 
 drawAndSend :: World -> IO ()
 drawAndSend world = do
-  let playerTiles = drawTilesForPlayer world (world ^. wdMap) 
+  let layers = drawTilesForPlayer world (world ^. wdMap) 
   
   let cmd = Ae.encodeText UiDrawCommand { drCmd = "draw"
                                         , drScreenWidth = world ^. wdPlayer ^. plScreenSize ^. _1
-                                        , drMapData = mkDrawMapData <$> Map.toList playerTiles
+                                        , drMapData = mkDrawMapData <<$>> (Map.toList <$> layers)
                                         }
   sendData (world ^. wdPlayer ^. plConn) cmd
 
@@ -256,46 +256,47 @@ worldCoordToPlayer (WorldPos (worldTopX, worldTopY)) (WorldPos (worldX, worldY))
    PlayerPos (worldX - worldTopX, -(worldY - worldTopY))
 
   
-drawTilesForPlayer :: World -> Map WorldPos Entity -> Map PlayerPos Tile
+drawTilesForPlayer :: World -> Map WorldPos Entity -> [Map PlayerPos Tile]
 drawTilesForPlayer world entityMap =
   let
-    player = world ^. wdPlayer
-    
-    -- Top left of player's grid
-    (WorldPos (topX, topY)) = player ^. plWorldTopLeft 
+    -- Entity base layer
+    entityLayer = mkLayer entityMap
 
-    -- Players screen/grid dimensions
-    (screenX, screenY) = player ^. plScreenSize 
-
-    -- Bottom right corner
-    (bottomX, bottomY) = (topX + screenX, topY - screenY) 
-
-    -- Filter out blank
-    noEmptyMap = Map.filter (\e -> e ^. enTile ^. tlName /= "blank") entityMap 
-
-    -- Add the actors to the map.
-    -- Notice that this will replace whatever entity was there (for this draw)
-    -- This fold works by
-    --    - Starting with the map of entities that are not blank
-    --    - Inserting each actor into the updated map (the accumulator)
-    -- getAllActors is called to get the player's actor and all other actors
-    noEmptyMapWithActors = foldr
-                           (\actor accum -> Map.insert (actor ^. acWorldPos) (actor ^. acEntity) accum)
-                           noEmptyMap
-                           (getAllActors world)
-
-    -- Only get the entitys that are at positions on the player's screen
-    visibleEntitys = Map.filterWithKey (inView topX topY bottomX bottomY) noEmptyMapWithActors
-
-    -- Get the tile for each entity
-    tileMap = (^. enTile) <$> visibleEntitys 
+    -- Actor layer on top
+    actorMap = Map.fromList $ (\a -> (a ^. acWorldPos, a ^. acEntity)) <$> getAllActors world
+    actorLayer = mkLayer actorMap
   in
-  -- Get it with player positions
-  Map.mapKeys (worldCoordToPlayer $ player ^. plWorldTopLeft) tileMap
+    [entityLayer, actorLayer]
 
   where
-    inView topX topY bottomX bottomY (WorldPos (x, y)) _ =
+    player = world ^. wdPlayer
+    
+    -- | Top left of player's grid
+    (WorldPos (topX, topY)) = player ^. plWorldTopLeft 
+
+    -- | Players screen/grid dimensions
+    (screenX, screenY) = player ^. plScreenSize 
+
+    -- | Bottom right corner
+    (bottomX, bottomY) = (topX + screenX, topY - screenY) 
+
+    inView (WorldPos (x, y)) _ =
       x >= topX && x < bottomX && y > bottomY && y <= topY
+
+    mkLayer :: Map WorldPos Entity -> Map PlayerPos Tile
+    mkLayer entities =
+      let
+        -- Filter out blank
+        noEmptyMap = Map.filter (\e -> e ^. enTile ^. tlName /= "blank") entities 
+
+        -- Only get the entitys that are at positions on the player's screen
+        visibleEntitys = Map.filterWithKey inView noEmptyMap
+
+        -- Get the tile for each entity
+        tileMap = (^. enTile) <$> visibleEntitys 
+      in
+      -- Get it with player positions
+      Map.mapKeys (worldCoordToPlayer $ player ^. plWorldTopLeft) tileMap
 
 
 getAllActors :: World -> [Actor]

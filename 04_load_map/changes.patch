@@ -35,7 +35,7 @@ diff -w -B -a -d -u -b ../03_tiles/src/GameCore.hs ./src/GameCore.hs
  
 diff -w -B -a -d -u -b ../03_tiles/src/GameEngine.hs ./src/GameEngine.hs
 --- ../03_tiles/src/GameEngine.hs	2018-02-18 10:10:17.309202811 +0200
-+++ ./src/GameEngine.hs	2018-02-18 17:50:42.447800124 +0200
++++ ./src/GameEngine.hs	2018-02-24 10:02:28.797793166 +0200
 @@ -5,13 +5,17 @@
  module GameEngine where
  

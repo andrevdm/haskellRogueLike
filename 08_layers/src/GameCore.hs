@@ -95,7 +95,7 @@ data UiKey = UiKey { ukShortcut :: !Text
 data UiDrawCommand = UiDrawCommand
                      { drCmd :: !Text
                      , drScreenWidth :: !Int
-                     , drMapData :: ![(Int, Int, Int)]
+                     , drMapData :: ![[(Int, Int, Int)]]
                      } deriving (Generic)
 
 

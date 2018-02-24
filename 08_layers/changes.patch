@@ -1,1 +1,117 @@
 Common subdirectories: ../07_collisions/src/Data and ./src/Data
+diff -w -B -a -d -u -b ../07_collisions/src/GameCore.hs ./src/GameCore.hs
+--- ../07_collisions/src/GameCore.hs	2018-02-21 07:58:16.686370994 +0200
++++ ./src/GameCore.hs	2018-02-24 10:14:00.836125289 +0200
+@@ -95,7 +95,7 @@
+ data UiDrawCommand = UiDrawCommand
+                      { drCmd :: !Text
+                      , drScreenWidth :: !Int
+-                     , drMapData :: ![(Int, Int, Int)]
++                     , drMapData :: ![[(Int, Int, Int)]]
+                      } deriving (Generic)
+ 
+ 
+diff -w -B -a -d -u -b ../07_collisions/src/GameEngine.hs ./src/GameEngine.hs
+--- ../07_collisions/src/GameEngine.hs	2018-02-21 07:58:41.077601663 +0200
++++ ./src/GameEngine.hs	2018-02-24 10:14:22.404073758 +0200
+@@ -209,11 +209,11 @@
+ 
+ drawAndSend :: World -> IO ()
+ drawAndSend world = do
+-  let playerTiles = drawTilesForPlayer world (world ^. wdMap) 
++  let layers = drawTilesForPlayer world (world ^. wdMap) 
+   
+   let cmd = Ae.encodeText UiDrawCommand { drCmd = "draw"
+                                         , drScreenWidth = world ^. wdPlayer ^. plScreenSize ^. _1
+-                                        , drMapData = mkDrawMapData <$> Map.toList playerTiles
++                                        , drMapData = mkDrawMapData <<$>> (Map.toList <$> layers)
+                                         }
+   sendData (world ^. wdPlayer ^. plConn) cmd
+ 
+@@ -256,36 +256,41 @@
+    PlayerPos (worldX - worldTopX, -(worldY - worldTopY))
+ 
+   
+-drawTilesForPlayer :: World -> Map WorldPos Entity -> Map PlayerPos Tile
++drawTilesForPlayer :: World -> Map WorldPos Entity -> [Map PlayerPos Tile]
+ drawTilesForPlayer world entityMap =
+   let
++    -- Entity base layer
++    entityLayer = mkLayer entityMap
++
++    -- Actor layer on top
++    actorMap = Map.fromList $ (\a -> (a ^. acWorldPos, a ^. acEntity)) <$> getAllActors world
++    actorLayer = mkLayer actorMap
++  in
++    [entityLayer, actorLayer]
++
++  where
+     player = world ^. wdPlayer
+     
+-    -- Top left of player's grid
++    -- | Top left of player's grid
+     (WorldPos (topX, topY)) = player ^. plWorldTopLeft 
+ 
+-    -- Players screen/grid dimensions
++    -- | Players screen/grid dimensions
+     (screenX, screenY) = player ^. plScreenSize 
+ 
+-    -- Bottom right corner
++    -- | Bottom right corner
+     (bottomX, bottomY) = (topX + screenX, topY - screenY) 
+ 
+-    -- Filter out blank
+-    noEmptyMap = Map.filter (\e -> e ^. enTile ^. tlName /= "blank") entityMap 
++    inView (WorldPos (x, y)) _ =
++      x >= topX && x < bottomX && y > bottomY && y <= topY
+ 
+-    -- Add the actors to the map.
+-    -- Notice that this will replace whatever entity was there (for this draw)
+-    -- This fold works by
+-    --    - Starting with the map of entities that are not blank
+-    --    - Inserting each actor into the updated map (the accumulator)
+-    -- getAllActors is called to get the player's actor and all other actors
+-    noEmptyMapWithActors = foldr
+-                           (\actor accum -> Map.insert (actor ^. acWorldPos) (actor ^. acEntity) accum)
+-                           noEmptyMap
+-                           (getAllActors world)
++    mkLayer :: Map WorldPos Entity -> Map PlayerPos Tile
++    mkLayer entities =
++      let
++        -- Filter out blank
++        noEmptyMap = Map.filter (\e -> e ^. enTile ^. tlName /= "blank") entities 
+ 
+     -- Only get the entitys that are at positions on the player's screen
+-    visibleEntitys = Map.filterWithKey (inView topX topY bottomX bottomY) noEmptyMapWithActors
++        visibleEntitys = Map.filterWithKey inView noEmptyMap
+ 
+     -- Get the tile for each entity
+     tileMap = (^. enTile) <$> visibleEntitys 
+@@ -293,10 +298,6 @@
+   -- Get it with player positions
+   Map.mapKeys (worldCoordToPlayer $ player ^. plWorldTopLeft) tileMap
+ 
+-  where
+-    inView topX topY bottomX bottomY (WorldPos (x, y)) _ =
+-      x >= topX && x < bottomX && y > bottomY && y <= topY
+-
+ 
+ getAllActors :: World -> [Actor]
+ getAllActors world =
+--- ../07_collisions/html/rogue.js	2018-02-19 07:59:01.080185217 +0200
++++ ./html/rogue.js	2018-02-24 10:15:36.763896215 +0200
+@@ -120,12 +120,14 @@
+         //Draw background image of blank tiles
+         ctx.drawImage( getCachedBlankCanvas(), 0, 0 );
+ 
++        R.forEach( layer => {
+         R.forEach( ([atX, atY, tid]) => {
+           const [tX, tY] = tileFromTileId( tid );
+           
+           //function drawTile( ctx, img, twidth, theight, dx, dy, trow, tcol ){
+           drawTile( ctx, tilesMain, config.tileWidth, config.tileHeight, atX, atY, tX, tY );
+ 
++          }, layer )
+         }, cmd.mapData );
+ 
+         break;
