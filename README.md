@@ -12,11 +12,10 @@
 
 TODO
  - Next (in order)
+   - utility
 
  - unordered
    - story (change move player to be a story action)
-   - energy
-   - inventory
-   - utility
-   - memory
    - combat
+   - memory
+   - inventory
