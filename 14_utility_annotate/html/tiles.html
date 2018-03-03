@@ -1,0 +1,42 @@
+<html>
+  <body>
+    <img src="DungeonCrawl_ProjectUtumnoTileset_0.png" id="tiles"/>
+  </body>
+  <script>
+    function getMousePos(canvas, e) {
+      var rect = canvas.getBoundingClientRect();
+      return {x: e.clientX - rect.left, y: e.clientY - rect.top};
+    }
+    
+    function onClick(e){
+      const pos = getMousePos(this, e);
+      const mx = pos.x;
+      const my = pos.y;
+    
+      const gx = Math.floor( mx / 32 );
+      const gy = Math.floor( my / 32 );
+    
+      alert( gx + ", " + gy );
+    }
+    
+    function onMouseMove(e){
+      const t = document.getElementById("tiles");
+      t.title = "";
+    
+      const pos = getMousePos(this, e);
+      const mx = pos.x;
+      const my = pos.y;
+    
+      const gx = Math.floor( mx / 32 );
+      const gy = Math.floor( my / 32 );
+    
+      t.title = gx + ", " + gy;
+    }
+    
+    const e = document.getElementById("tiles");
+    e.addEventListener( "click", onClick, false );
+    e.addEventListener( "mousemove", onMouseMove, false );
+  </script>
+  
+  
+</html>

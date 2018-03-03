@@ -14,6 +14,7 @@ build:
 	 @$(MAKE) -C 11_sticky_light build
 	 @$(MAKE) -C 12_energy build
 	 @$(MAKE) -C 13_utility build
+	 @$(MAKE) -C 14_utility_annotate build
 
 .PHONY: setup
 setup:
@@ -29,6 +30,7 @@ setup:
 	 @$(MAKE) -C 11_sticky_light setup
 	 @$(MAKE) -C 12_energy setup
 	 @$(MAKE) -C 13_utility setup
+	 @$(MAKE) -C 14_utility_annotate setup
 
 .PHONY: test
 test:
@@ -44,6 +46,7 @@ test:
 	 @$(MAKE) -C 11_sticky_light test
 	 @$(MAKE) -C 12_energy test
 	 @$(MAKE) -C 13_utility test
+	 @$(MAKE) -C 14_utility_annotate test
 
 .PHONY: lint
 lint:
@@ -59,5 +62,6 @@ lint:
 	 @$(MAKE) -C 11_sticky_light lint
 	 @$(MAKE) -C 12_energy lint
 	 @$(MAKE) -C 13_utility lint
+	 @$(MAKE) -C 14_utility_annotate lint
 
 
