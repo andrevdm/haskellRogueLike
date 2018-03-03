@@ -13,7 +13,7 @@ diff -w -B -a -d -u -b ../07_collisions/src/GameCore.hs ./src/GameCore.hs
  
 diff -w -B -a -d -u -b ../07_collisions/src/GameEngine.hs ./src/GameEngine.hs
 --- ../07_collisions/src/GameEngine.hs	2018-02-21 07:58:41.077601663 +0200
-+++ ./src/GameEngine.hs	2018-02-24 10:14:22.404073758 +0200
++++ ./src/GameEngine.hs	2018-03-03 06:47:15.197227576 +0200
 @@ -209,11 +209,11 @@
  
  drawAndSend :: World -> IO ()
@@ -28,7 +28,7 @@ diff -w -B -a -d -u -b ../07_collisions/src/GameEngine.hs ./src/GameEngine.hs
                                          }
    sendData (world ^. wdPlayer ^. plConn) cmd
  
-@@ -256,36 +256,41 @@
+@@ -256,36 +256,42 @@
     PlayerPos (worldX - worldTopX, -(worldY - worldTopY))
  
    
@@ -41,7 +41,8 @@ diff -w -B -a -d -u -b ../07_collisions/src/GameEngine.hs ./src/GameEngine.hs
 +
 +    -- Actor layer on top
 +    actorMap = Map.fromList $ (\a -> (a ^. acWorldPos, a ^. acEntity)) <$> getAllActors world
-+    actorLayer = mkLayer actorMap
++    visibleActorMap = Map.filterWithKey inView actorMap
++    actorLayer = mkLayer visibleActorMap
 +  in
 +    [entityLayer, actorLayer]
 +
@@ -87,7 +88,7 @@ diff -w -B -a -d -u -b ../07_collisions/src/GameEngine.hs ./src/GameEngine.hs
  
      -- Get the tile for each entity
      tileMap = (^. enTile) <$> visibleEntitys 
-@@ -293,10 +298,6 @@
+@@ -293,10 +299,6 @@
    -- Get it with player positions
    Map.mapKeys (worldCoordToPlayer $ player ^. plWorldTopLeft) tileMap
  

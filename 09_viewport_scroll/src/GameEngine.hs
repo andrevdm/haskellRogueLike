@@ -271,7 +271,8 @@ drawTilesForPlayer world entityMap =
 
     -- Actor layer on top
     actorMap = Map.fromList $ (\a -> (a ^. acWorldPos, a ^. acEntity)) <$> getAllActors world
-    actorLayer = mkLayer actorMap
+    visibleActorMap = Map.filterWithKey inView actorMap
+    actorLayer = mkLayer visibleActorMap
   in
     [entityLayer, actorLayer]
 
