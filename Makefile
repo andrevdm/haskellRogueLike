@@ -11,6 +11,7 @@ build:
 	 @$(MAKE) -C 08_layers build
 	 @$(MAKE) -C 09_viewport_scroll build
 	 @$(MAKE) -C 10_fov build
+	 @$(MAKE) -C 11_sticky_light build
 
 .PHONY: setup
 setup:
@@ -23,6 +24,7 @@ setup:
 	 @$(MAKE) -C 08_layers setup
 	 @$(MAKE) -C 09_viewport_scroll setup
 	 @$(MAKE) -C 10_fov setup
+	 @$(MAKE) -C 11_sticky_light setup
 
 .PHONY: test
 test:
@@ -35,6 +37,7 @@ test:
 	 @$(MAKE) -C 08_layers test
 	 @$(MAKE) -C 09_viewport_scroll test
 	 @$(MAKE) -C 10_fov test
+	 @$(MAKE) -C 11_sticky_light test
 
 .PHONY: lint
 lint:
@@ -47,5 +50,6 @@ lint:
 	 @$(MAKE) -C 08_layers lint
 	 @$(MAKE) -C 09_viewport_scroll lint
 	 @$(MAKE) -C 10_fov lint
+	 @$(MAKE) -C 11_sticky_light lint
 
 

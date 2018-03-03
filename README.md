@@ -15,7 +15,6 @@ TODO
 
  - unordered
    - story (change move player to be a story action)
-   - fov, darkness, breshenham
    - energy
    - inventory
    - utility
