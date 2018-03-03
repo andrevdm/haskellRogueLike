@@ -1,5 +1,5 @@
 Common subdirectories: ../10_fov/src/Data and ./src/Data
-diff -w -B -a -d -u -b ../10_fov/src/GameCore.hs ./src/GameCore.hs
+diff -w -B -a -d -u -b --new-file ../10_fov/src/GameCore.hs ./src/GameCore.hs
 --- ../10_fov/src/GameCore.hs	2018-02-27 18:31:55.730545080 +0200
 +++ ./src/GameCore.hs	2018-03-03 07:35:23.217997623 +0200
 @@ -29,6 +29,7 @@
@@ -10,7 +10,7 @@ diff -w -B -a -d -u -b ../10_fov/src/GameCore.hs ./src/GameCore.hs
                     , _acFovDistance :: !Int
                     }
  
-diff -w -B -a -d -u -b ../10_fov/src/GameEngine.hs ./src/GameEngine.hs
+diff -w -B -a -d -u -b --new-file ../10_fov/src/GameEngine.hs ./src/GameEngine.hs
 --- ../10_fov/src/GameEngine.hs	2018-03-03 07:42:52.733297248 +0200
 +++ ./src/GameEngine.hs	2018-03-03 07:49:50.081140686 +0200
 @@ -5,6 +5,7 @@

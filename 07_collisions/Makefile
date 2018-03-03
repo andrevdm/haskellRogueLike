@@ -9,7 +9,7 @@ setup:
 .PHONY: build
 build:
 	stack build 
-	diff ../06_moving/src/ ./src/ -w -B -a -d -u -b > changes.patch | true
+	diff ../06_moving/src/ ./src/ -w -B -a -d -u -b --new-file > changes.patch | true
 
 .PHONY: test
 test:

@@ -1,7 +1,81 @@
 Common subdirectories: ../01_web_ui/src/Data and ./src/Data
-Only in ./src/: Entities.hs
-Only in ./src/: EntityType.hs
-diff -w -B -a -d -u -b ../01_web_ui/src/GameCore.hs ./src/GameCore.hs
+diff -w -B -a -d -u -b --new-file ../01_web_ui/src/Entities.hs ./src/Entities.hs
+--- ../01_web_ui/src/Entities.hs	1970-01-01 02:00:00.000000000 +0200
++++ ./src/Entities.hs	2018-02-17 17:20:06.255088107 +0200
+@@ -0,0 +1,56 @@
++{-# LANGUAGE NoImplicitPrelude #-}
++{-# LANGUAGE OverloadedStrings #-}
++
++module Entities where
++
++import Protolude hiding (Map)
++import           Data.Map.Strict (Map)
++import qualified Data.Map.Strict as Map
++
++import           GameCore
++import qualified EntityType as E
++
++tiles :: Map E.EntityType Tile
++entities :: Map E.EntityType Entity
++loadTexts :: Map Text Entity
++
++(tiles, entities, loadTexts) =
++  let is = [ (E.Blank     , (41, 13), Nothing)
++           , (E.Door      , (26, 15), Just "+")
++           , (E.DoorClosed, (21, 15), Just "-")
++           , (E.Wall      , ( 9, 14), Just "w")
++           ]
++  in
++  let mkData (typ, pos@(x, y), l) (tiles', entities', loads') =
++        let (entity, tile) = mkEntityAndTile (x * 100 + y) typ pos in
++        ( Map.insert typ tile tiles'
++        , Map.insert typ entity entities'
++        , maybe loads' (\load -> Map.insert load entity loads') l
++        )
++  in
++  foldr
++    mkData
++    ( Map.fromList [(E.Unknown, tileUnknown)]
++    , Map.fromList [(E.Unknown, entityUnknown)]
++    , Map.empty
++    )
++    is
++
++
++getEntity :: E.EntityType -> Entity
++getEntity e = Map.findWithDefault entityUnknown e entities
++
++getTile :: E.EntityType -> Tile
++getTile e = Map.findWithDefault tileUnknown e tiles
++
++
++mkEntityAndTile :: Int -> E.EntityType -> (Int, Int) -> (Entity, Tile)
++mkEntityAndTile id typ pic =
++  let t = Tile { _tlId = id, _tlName = show typ, _tlPic = pic } in
++  let a = Entity { _enType = typ, _enTile = t, _enProps = Map.empty, _enAttribs = Map.empty} in
++  (a, t)
++    
++
++tileUnknown :: Tile
++entityUnknown :: Entity
++(entityUnknown, tileUnknown) = mkEntityAndTile 201 E.Unknown (2, 1)
+diff -w -B -a -d -u -b --new-file ../01_web_ui/src/EntityType.hs ./src/EntityType.hs
+--- ../01_web_ui/src/EntityType.hs	1970-01-01 02:00:00.000000000 +0200
++++ ./src/EntityType.hs	2018-02-17 16:57:58.969147930 +0200
+@@ -0,0 +1,12 @@
++{-# LANGUAGE NoImplicitPrelude #-}
++
++module EntityType where
++
++import Protolude
++
++data EntityType = Blank
++                | Door
++                | DoorClosed
++                | Wall
++                | Unknown
++                deriving (Show, Eq, Ord)
+diff -w -B -a -d -u -b --new-file ../01_web_ui/src/GameCore.hs ./src/GameCore.hs
 --- ../01_web_ui/src/GameCore.hs	2018-02-18 15:37:50.223522344 +0200
 +++ ./src/GameCore.hs	2018-02-18 15:37:39.082266617 +0200
 @@ -14,7 +14,7 @@
@@ -83,7 +157,7 @@ diff -w -B -a -d -u -b ../01_web_ui/src/GameCore.hs ./src/GameCore.hs
  
  -- | drop prefix, and then lower case
  -- | renField 3 "tskBla" == "bla"
-diff -w -B -a -d -u -b ../01_web_ui/src/GameEngine.hs ./src/GameEngine.hs
+diff -w -B -a -d -u -b --new-file ../01_web_ui/src/GameEngine.hs ./src/GameEngine.hs
 --- ../01_web_ui/src/GameEngine.hs	2018-02-18 10:10:42.961437918 +0200
 +++ ./src/GameEngine.hs	2018-02-18 10:10:17.309202811 +0200
 @@ -11,12 +11,15 @@
@@ -137,7 +211,7 @@ diff -w -B -a -d -u -b ../01_web_ui/src/GameEngine.hs ./src/GameEngine.hs
 +                                        , drScreenWidth = world ^. wdPlayer ^. plScreenSize ^. _1
 +                                        }
 +  sendData (world ^. wdPlayer ^. plConn) cmd
-diff -w -B -a -d -u -b ../01_web_ui/src/GameHost.hs ./src/GameHost.hs
+diff -w -B -a -d -u -b --new-file ../01_web_ui/src/GameHost.hs ./src/GameHost.hs
 --- ../01_web_ui/src/GameHost.hs	2018-02-17 12:13:04.029016625 +0200
 +++ ./src/GameHost.hs	2018-02-17 16:34:50.161448326 +0200
 @@ -42,6 +42,9 @@

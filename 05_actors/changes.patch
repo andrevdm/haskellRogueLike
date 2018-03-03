@@ -1,5 +1,5 @@
 Common subdirectories: ../04_load_map/src/Data and ./src/Data
-diff -w -B -a -d -u -b ../04_load_map/src/Entities.hs ./src/Entities.hs
+diff -w -B -a -d -u -b --new-file ../04_load_map/src/Entities.hs ./src/Entities.hs
 --- ../04_load_map/src/Entities.hs	2018-02-17 21:16:24.587156744 +0200
 +++ ./src/Entities.hs	2018-02-18 17:40:16.896494513 +0200
 @@ -19,6 +19,9 @@
@@ -12,7 +12,7 @@ diff -w -B -a -d -u -b ../04_load_map/src/Entities.hs ./src/Entities.hs
             ]
    in
    let mkData (typ, pos@(x, y), l) (tiles', entities', loads') =
-diff -w -B -a -d -u -b ../04_load_map/src/EntityType.hs ./src/EntityType.hs
+diff -w -B -a -d -u -b --new-file ../04_load_map/src/EntityType.hs ./src/EntityType.hs
 --- ../04_load_map/src/EntityType.hs	2018-02-17 21:16:24.587156744 +0200
 +++ ./src/EntityType.hs	2018-02-18 17:39:23.772976247 +0200
 @@ -8,5 +8,8 @@
@@ -24,7 +24,7 @@ diff -w -B -a -d -u -b ../04_load_map/src/EntityType.hs ./src/EntityType.hs
 +                | Snake
                  | Unknown
                  deriving (Show, Eq, Ord)
-diff -w -B -a -d -u -b ../04_load_map/src/GameCore.hs ./src/GameCore.hs
+diff -w -B -a -d -u -b --new-file ../04_load_map/src/GameCore.hs ./src/GameCore.hs
 --- ../04_load_map/src/GameCore.hs	2018-02-18 15:37:27.344925222 +0200
 +++ ./src/GameCore.hs	2018-02-18 17:43:02.267103014 +0200
 @@ -11,12 +11,27 @@
@@ -71,7 +71,7 @@ diff -w -B -a -d -u -b ../04_load_map/src/GameCore.hs ./src/GameCore.hs
  
  
  data UiMessage = UiMessage { umCmd :: !Text
-diff -w -B -a -d -u -b ../04_load_map/src/GameEngine.hs ./src/GameEngine.hs
+diff -w -B -a -d -u -b --new-file ../04_load_map/src/GameEngine.hs ./src/GameEngine.hs
 --- ../04_load_map/src/GameEngine.hs	2018-02-24 10:02:28.797793166 +0200
 +++ ./src/GameEngine.hs	2018-02-18 17:54:50.574217847 +0200
 @@ -14,6 +14,7 @@

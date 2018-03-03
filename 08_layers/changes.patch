@@ -1,5 +1,5 @@
 Common subdirectories: ../07_collisions/src/Data and ./src/Data
-diff -w -B -a -d -u -b ../07_collisions/src/GameCore.hs ./src/GameCore.hs
+diff -w -B -a -d -u -b --new-file ../07_collisions/src/GameCore.hs ./src/GameCore.hs
 --- ../07_collisions/src/GameCore.hs	2018-02-21 07:58:16.686370994 +0200
 +++ ./src/GameCore.hs	2018-02-24 10:14:00.836125289 +0200
 @@ -95,7 +95,7 @@
@@ -11,7 +11,7 @@ diff -w -B -a -d -u -b ../07_collisions/src/GameCore.hs ./src/GameCore.hs
                       } deriving (Generic)
  
  
-diff -w -B -a -d -u -b ../07_collisions/src/GameEngine.hs ./src/GameEngine.hs
+diff -w -B -a -d -u -b --new-file ../07_collisions/src/GameEngine.hs ./src/GameEngine.hs
 --- ../07_collisions/src/GameEngine.hs	2018-02-21 07:58:41.077601663 +0200
 +++ ./src/GameEngine.hs	2018-03-03 06:47:15.197227576 +0200
 @@ -209,11 +209,11 @@

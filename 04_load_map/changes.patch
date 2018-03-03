@@ -1,5 +1,5 @@
 Common subdirectories: ../03_tiles/src/Data and ./src/Data
-diff -w -B -a -d -u -b ../03_tiles/src/GameCore.hs ./src/GameCore.hs
+diff -w -B -a -d -u -b --new-file ../03_tiles/src/GameCore.hs ./src/GameCore.hs
 --- ../03_tiles/src/GameCore.hs	2018-02-18 15:37:39.082266617 +0200
 +++ ./src/GameCore.hs	2018-02-18 15:37:27.344925222 +0200
 @@ -18,10 +18,12 @@
@@ -33,7 +33,7 @@ diff -w -B -a -d -u -b ../03_tiles/src/GameCore.hs ./src/GameCore.hs
                       } deriving (Generic)
  
  
-diff -w -B -a -d -u -b ../03_tiles/src/GameEngine.hs ./src/GameEngine.hs
+diff -w -B -a -d -u -b --new-file ../03_tiles/src/GameEngine.hs ./src/GameEngine.hs
 --- ../03_tiles/src/GameEngine.hs	2018-02-18 10:10:17.309202811 +0200
 +++ ./src/GameEngine.hs	2018-02-24 10:02:28.797793166 +0200
 @@ -5,13 +5,17 @@
