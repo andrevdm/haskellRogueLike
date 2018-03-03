@@ -26,10 +26,6 @@ path (PathToEntity p _ _) = p
 path (PathToActor p _ _) = p
 path (PathToPlayer p _ _) = p
 
-pathPs :: Path -> [WorldPos]
-pathPs (Path p) = p
-
-
 selectTopUtility :: [(Float, Actor, Impulse, Text, Maybe PathTo)]
                  -> Maybe (Float, Actor, Impulse, Text, Maybe PathTo)
 selectTopUtility rs = 
@@ -84,22 +80,6 @@ clampTo :: Float -> Float -> Float -> Float
 clampTo vmin vmax = min vmax . max vmin
 
 
-clip :: Float -> Bool
-clip = clipTo 0.0 1.0
-
-  
-clipTo :: Float -> Float -> Float -> Bool
-clipTo vmin vmax v = v >= vmin && v <= vmax
-
-
-onlyPlayer :: [PathTo] -> [PathTo]
-onlyPlayer =
-  filter go
-  where
-    go PathToPlayer {} = True
-    go _ = False
-
-  
 onlyEntitiesOfType :: [E.EntityType] -> [PathTo] -> [PathTo]
 onlyEntitiesOfType types =
   filter go
@@ -108,18 +88,6 @@ onlyEntitiesOfType types =
     go _ = False
 
 
-onlyActorClassIn :: [ActorClass] -> [PathTo] -> [PathTo]
-onlyActorClassIn classes =
-  filter go
-  where
-    go (PathToActor _ a _) = a ^. acClass `elem` classes
-    go _ = False
-
-
-onlyWalls :: [PathTo] -> [PathTo]
-onlyWalls = onlyEntitiesOfType [E.Wall]
-
-  
 emptyDisposition :: Disposition
 emptyDisposition = Disposition { _dsSmitten = 0
                                , _dsWanderlust = 0

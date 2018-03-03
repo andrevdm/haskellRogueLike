@@ -1,7 +1,7 @@
 Common subdirectories: ../12_energy/src/Data and ./src/Data
 diff -w -B -a -d -u -b --new-file ../12_energy/src/GameCore.hs ./src/GameCore.hs
 --- ../12_energy/src/GameCore.hs	2018-03-03 09:22:41.529322630 +0200
-+++ ./src/GameCore.hs	2018-03-03 14:39:08.275017608 +0200
++++ ./src/GameCore.hs	2018-03-03 16:22:44.564340483 +0200
 @@ -35,6 +35,17 @@
                     , _acEnergy :: !B.BInt -- ^ available energy, bounded
                     , _acMoveEnergyCost :: !Int
@@ -20,7 +20,7 @@ diff -w -B -a -d -u -b --new-file ../12_energy/src/GameCore.hs ./src/GameCore.hs
                     }
  
  data Player = Player { _plConn :: !Host.Connection
-@@ -83,14 +94,32 @@
+@@ -83,14 +94,31 @@
                     deriving (Show, Eq)
  
  
@@ -42,7 +42,6 @@ diff -w -B -a -d -u -b --new-file ../12_energy/src/GameCore.hs ./src/GameCore.hs
 +            | PathToPlayer Path Player WorldPos
 +
 +data Impulse = ImpMoveTowards Path
-+             | ImpMoveAway Path
 +             | ImpMoveRandom
 +
 +data Disposition = Disposition { _dsSmitten :: Float
@@ -59,7 +58,7 @@ diff -w -B -a -d -u -b --new-file ../12_energy/src/GameCore.hs ./src/GameCore.hs
  data UiMessage = UiMessage { umCmd :: !Text
                             , umMessage :: !Text
                             }
-@@ -142,3 +171,12 @@
+@@ -142,3 +170,12 @@
    Txt.unpack . (if toLower then mkLower else identity) . Txt.drop drp . Txt.pack
    where
      mkLower t = Txt.toLower (Txt.take 1 t) <> Txt.drop 1 t
@@ -74,7 +73,7 @@ diff -w -B -a -d -u -b --new-file ../12_energy/src/GameCore.hs ./src/GameCore.hs
 +makeLenses ''Disposition
 diff -w -B -a -d -u -b --new-file ../12_energy/src/GameEngine.hs ./src/GameEngine.hs
 --- ../12_energy/src/GameEngine.hs	2018-03-03 16:12:26.781924321 +0200
-+++ ./src/GameEngine.hs	2018-03-03 16:11:53.974888899 +0200
++++ ./src/GameEngine.hs	2018-03-03 16:23:06.216552562 +0200
 @@ -1,3 +1,4 @@
 +{-# OPTIONS_GHC -fno-warn-type-defaults #-}
  {-# LANGUAGE NoImplicitPrelude #-}
@@ -191,7 +190,7 @@ diff -w -B -a -d -u -b --new-file ../12_energy/src/GameEngine.hs ./src/GameEngin
                              (\a -> B.get (a ^. acEnergy) >= (w ^. wdMinMoveEnergy) && not (a ^. acSkipMove))
                              (Map.elems $ w ^. wdActors)
        in
-@@ -795,7 +815,88 @@
+@@ -795,7 +815,87 @@
        updateAllActors w (\_ a -> a & acSkipMove .~ False)
  
  
@@ -215,7 +214,6 @@ diff -w -B -a -d -u -b --new-file ../12_energy/src/GameEngine.hs ./src/GameEngin
 +                (tx - fx, ty - fy, initialStdGen)
 +              _ -> (0, 0, initialStdGen)
 +
-+          ImpMoveAway _ -> (0, 0, initialStdGen)
 +  in
 +  if dx /=0 || dy /= 0
 +  then
@@ -282,8 +280,8 @@ diff -w -B -a -d -u -b --new-file ../12_energy/src/GameEngine.hs ./src/GameEngin
 +    (getAllActors w)
 diff -w -B -a -d -u -b --new-file ../12_energy/src/UtilityBrain.hs ./src/UtilityBrain.hs
 --- ../12_energy/src/UtilityBrain.hs	1970-01-01 02:00:00.000000000 +0200
-+++ ./src/UtilityBrain.hs	2018-03-03 14:44:31.438983761 +0200
-@@ -0,0 +1,197 @@
++++ ./src/UtilityBrain.hs	2018-03-03 17:17:59.774359636 +0200
+@@ -0,0 +1,165 @@
 +{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 +{-# LANGUAGE NoImplicitPrelude #-}
 +{-# LANGUAGE OverloadedStrings #-}
@@ -311,10 +309,6 @@ diff -w -B -a -d -u -b --new-file ../12_energy/src/UtilityBrain.hs ./src/Utility
 +path (PathToEntity p _ _) = p
 +path (PathToActor p _ _) = p
 +path (PathToPlayer p _ _) = p
-+
-+pathPs :: Path -> [WorldPos]
-+pathPs (Path p) = p
-+
 +
 +selectTopUtility :: [(Float, Actor, Impulse, Text, Maybe PathTo)]
 +                 -> Maybe (Float, Actor, Impulse, Text, Maybe PathTo)
@@ -370,22 +364,6 @@ diff -w -B -a -d -u -b --new-file ../12_energy/src/UtilityBrain.hs ./src/Utility
 +clampTo vmin vmax = min vmax . max vmin
 +
 +
-+clip :: Float -> Bool
-+clip = clipTo 0.0 1.0
-+
-+  
-+clipTo :: Float -> Float -> Float -> Bool
-+clipTo vmin vmax v = v >= vmin && v <= vmax
-+
-+
-+onlyPlayer :: [PathTo] -> [PathTo]
-+onlyPlayer =
-+  filter go
-+  where
-+    go PathToPlayer {} = True
-+    go _ = False
-+
-+  
 +onlyEntitiesOfType :: [E.EntityType] -> [PathTo] -> [PathTo]
 +onlyEntitiesOfType types =
 +  filter go
@@ -394,18 +372,6 @@ diff -w -B -a -d -u -b --new-file ../12_energy/src/UtilityBrain.hs ./src/Utility
 +    go _ = False
 +
 +
-+onlyActorClassIn :: [ActorClass] -> [PathTo] -> [PathTo]
-+onlyActorClassIn classes =
-+  filter go
-+  where
-+    go (PathToActor _ a _) = a ^. acClass `elem` classes
-+    go _ = False
-+
-+
-+onlyWalls :: [PathTo] -> [PathTo]
-+onlyWalls = onlyEntitiesOfType [E.Wall]
-+
-+  
 +emptyDisposition :: Disposition
 +emptyDisposition = Disposition { _dsSmitten = 0
 +                               , _dsWanderlust = 0
