@@ -300,7 +300,7 @@ drawTilesForPlayer world entityMap =
     -- Entity base layer
     entities = mkLayer entityMap
     -- Darkness
-    darknessOverlay = Map.empty --TODO darknessFovOverlay (world ^. wdPlayer) (world ^. wdPlayer ^. plActor)
+    darknessOverlay = darknessFovOverlay (world ^. wdPlayer) (world ^. wdPlayer ^. plActor)
     -- Darkness hides entity
     baseLayer = Map.union darknessOverlay entities
 
