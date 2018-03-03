@@ -26,6 +26,7 @@ import qualified GameHost as Host
 import           GameHost (conSendData, conReceiveText)
 import qualified Entities as E
 import qualified EntityType as E
+import qualified BoundedInt as B
 
 
 runGame :: IO ()
@@ -91,6 +92,8 @@ bootWorld conn screenSize mapData std =
                , _wdActors = Map.fromList [ (bug ^. acId, bug)
                                           , (snake ^. acId, snake)
                                           ]
+               , _wdMinMoveEnergy = 100
+               , _wdEnergyIncrements = 20
                }
 
     -- The player's actor
@@ -134,6 +137,7 @@ bootWorld conn screenSize mapData std =
              , _plWorldTopLeft = WorldPos (0, 0)
              , _plActor = mkPlayersActor
              , _plViewPortStyle = ViewPortBorder 2
+             , _plPendingEnergy = 0
              }
 
     mkPlayersActor =
@@ -145,6 +149,9 @@ bootWorld conn screenSize mapData std =
             , _acFovDistance = 3
             , _acFov = Nothing
             , _acFovHistory = Set.empty
+            , _acSkipMove = False
+            , _acMoveEnergyCost = 100
+            , _acEnergy = B.new 200 100
             }
 
     mkEnemyActor aid e (x, y) =
@@ -156,6 +163,9 @@ bootWorld conn screenSize mapData std =
             , _acFovDistance = 2
             , _acFov = Nothing
             , _acFovHistory = Set.empty
+            , _acSkipMove = False
+            , _acMoveEnergyCost = 150
+            , _acEnergy = B.new 180 100
             }
     
 
@@ -173,7 +183,13 @@ runCmd conn worldV cmd cmdData =
       
     "key" -> do
       -- Handle the key press
-      atomically $ modifyTVar' worldV (\w -> runActions w $ handleKey w cmdData)
+      atomically $ modifyTVar' worldV (\w ->
+                                         -- Do the actions as if they will succeed
+                                         let pendingWorld = runActions w $ handleKey w cmdData in
+                                         -- Apply, if the move is allowed
+                                         -- Cost is hard-coded to 100 for now, this will be fixed later
+                                         playerMoving 100 pendingWorld w
+                                      )
       -- Get the updated world
       w2 <- atomically $ readTVar worldV
       -- Draw
@@ -284,7 +300,7 @@ drawTilesForPlayer world entityMap =
     -- Entity base layer
     entities = mkLayer entityMap
     -- Darkness
-    darknessOverlay = darknessFovOverlay (world ^. wdPlayer) (world ^. wdPlayer ^. plActor)
+    darknessOverlay = Map.empty --TODO darknessFovOverlay (world ^. wdPlayer) (world ^. wdPlayer ^. plActor)
     -- Darkness hides entity
     baseLayer = Map.union darknessOverlay entities
 
@@ -437,6 +453,22 @@ updateActor w actor =
   then w & (wdPlayer . plActor) .~ actor                         -- update the player's actor
   else w & wdActors %~ Map.adjust (const actor) (actor ^. acId)  -- update other actor, nop if aid not found
 
+  
+-- | Update either the player's actor, or one of the world actors
+updateActorById :: World -> Aid -> (Actor -> Actor) -> World
+updateActorById w id update =
+  if w ^. wdPlayer ^. plActor ^. acId == id
+  then w & (wdPlayer . plActor) .~ update (w ^. wdPlayer ^. plActor) -- update the player's actor
+  else w & wdActors %~ Map.adjust update id                          -- update other actor, nop if aid not found
+
+  
+-- | Update all actors, including the player's actor
+updateAllActors :: World -> (World -> Actor -> Actor) -> World
+updateAllActors w fn =
+  let w2 = w & (wdPlayer . plActor) %~ fn w in
+  let w3 = w2 & wdActors %~ fmap (fn w2) in
+  w3
+
 
 -- | Update the player's view port
 updatePlayerViewport :: World -> World
@@ -586,3 +618,184 @@ darknessFovOverlay player actor =
 flatFov :: Maybe [(WorldPos, [WorldPos])] -> [WorldPos]
 flatFov Nothing = []
 flatFov (Just fov) = Lst.nub . Lst.concat $ snd <$> fov
+
+  
+-- | Manages the core logic of the energy system.
+--    
+--       [key press] ------> is zero cost move?
+--                                |
+--                                |
+--              +--<----yes-------+-->--no-----+
+--              |                              |
+--              v                              |
+--        +-->(exit)                           |
+--        |     ^                              |
+--        |     |                              v
+--        |     +--<----no--------player has min move energy?
+--        |                          |         
+--        |                         yes
+--        |                          |
+--        |                          v
+--        |                      move player
+--        |                          |         
+--        |                          v         
+--        +--<---yes----player still has > min move energy
+--                         and is not skipping a move?
+--                                   |         
+--                                  no
+--                                   |
+--                                   v
+--                ###################################################
+--                #                  |                              #
+--                #                  v                              #
+--          +--<--------player has > min move energy <--------+     #
+--          |     #                  |                        |     #
+--         yes    #                 no                        |     #
+--          |     #                  |                        |     #
+--          |     #                  v                        |     #
+--          |     #    move every non-player actor that       |     #
+--          |     #     has > min move energy and has         |     #
+--          |     #     not elected to skip a move.           |     #
+--          |     #                  |                        |     #
+--          |     #                  |                        |     #
+--          |     #                  v                        |     #
+--          |     #     add wdEnergyIncrements to all actors--+     #
+--          |     #           including player's actor              #
+--          |     #                                                 #
+--          |     ###################################################
+--          |
+--          |
+--          +---------------> set all actors skipMove = False
+--                                       |
+--                                       |
+--                                       v
+--                                     (exit)
+--  
+--  
+playerMoving :: Int -> World -> World -> World
+playerMoving pendingCost pendingWorld oldWorld = 
+  let playerAttemptedMoveWorld = 
+        Right oldWorld
+          >>= checkIfNonMove
+          >>= checkIfPlayerHasMinEnergy
+          >>= runPendingIfPlayerHasEnergy
+          >>= stopIfPlayerCanStillMove
+  in
+  case playerAttemptedMoveWorld of
+    Left w -> w -- Left means stop 
+    Right w ->  -- Right means continue with other actors
+      -- Loop, adding energy (wdEnergyincrements) to all actors until the player has enough energy to move
+      storeSkipTurnEnergy w
+      & runNonPlayerActorLoop
+      & restoreSkipTurnEnergy
+      & disableSkip
+  
+  where
+    checkIfNonMove w =
+      -- If the cost is zero/negative then this is not an actual move
+      --  Apply the pending action and continue
+      if pendingCost <= 0 && not (pendingWorld ^. wdPlayer ^. plActor ^. acSkipMove)
+      then Left pendingWorld
+      else Right w
+
+    checkIfPlayerHasMinEnergy w =
+      if B.get (w ^. wdPlayer ^. plActor ^. acEnergy) >= w ^. wdMinMoveEnergy
+      then Right w -- continue
+      else Left w  -- not enough energy to move regardless of move cost
+    
+    runPendingIfPlayerHasEnergy w =
+      if B.get (w ^. wdPlayer ^. plActor ^. acEnergy) >= pendingCost
+      then
+        -- perform move and subtract energy
+        Right (pendingWorld & (wdPlayer . plActor . acEnergy) %~ B.update (subtract pendingCost))
+      else
+        -- disallow
+        Left w
+
+    stopIfPlayerCanStillMove w =
+      let
+        a = w ^. wdPlayer ^. plActor 
+        hasEnergy = B.get (a ^. acEnergy) > a ^. acMoveEnergyCost 
+        skipMove = a ^. acSkipMove 
+      in
+      if
+        | skipMove -> Right w -- The player elected to skip a move, continue with others
+        | hasEnergy -> Left w -- The player has energy, its still their turn
+        | otherwise -> Right w -- continue
+
+    runNonPlayerActorLoop w =
+      if B.get (w ^. wdPlayer ^. plActor ^. acEnergy) >= w ^. wdMinMoveEnergy
+      then
+        w -- The player now has enough energy to move, stop loop
+      else
+        let
+          -- Move actors
+          w' = moveAllNonPlayers w 
+          -- Add energy for next loop
+          addEnergy _ a = a & acEnergy %~ B.update ((w' ^. wdEnergyIncrements) +)
+        in
+        runNonPlayerActorLoop $ updateAllActors w' addEnergy
+
+    moveAllNonPlayers w =
+      let
+        -- Random directions the actors could move in (no diagonal moves)
+        directions = [(-1,0), (0,-1), (0,1), (1,0)]
+  
+        -- Other actors just try to move in random directions
+        mv aOrig wOrig =
+          let
+            -- Pick a random direction to move
+            (dir, nextStd) = randomElement (aOrig ^. acStdGen) directions 
+            -- Try move, i.e. if there is no wall / actor in the way
+            w2 = tryMoveActor wOrig aOrig $ fromMaybe (0, 0) dir
+          in
+          case w2 of
+            Nothing ->
+              -- Unable to move, so skip a turn. This accumulates energy for the next attempt
+              --  Also update the stdgen for the next time a random number is needed
+              updateActor wOrig $ aOrig & acSkipMove .~ True
+                                        & acStdGen .~ nextStd
+
+            Just w2' ->
+              -- The actor moved, use the new world but remember to update the stdgen
+              updateActorById w2' (aOrig ^. acId) (\a -> a & acStdGen .~ nextStd)
+
+        -- All actors that have enough energy to move and are not skipping a turn
+        actorsThatCanMove = filter
+                            (\a -> B.get (a ^. acEnergy) >= (w ^. wdMinMoveEnergy) && not (a ^. acSkipMove))
+                            (Map.elems $ w ^. wdActors)
+      in
+      -- Are the any actors that could still move?
+      if null actorsThatCanMove
+      then
+        w -- No one left, done
+      else
+        -- Give actors that are able to move a chance to move
+        foldr mv w actorsThatCanMove
+      
+    storeSkipTurnEnergy w =
+      if w ^. wdPlayer ^. plActor ^. acSkipMove
+      then
+        -- Store the player's current energy, and set the energy level to zero
+        -- This lets the actor movement loop run for a full set of turns up to the min energy level
+        w & (wdPlayer . plPendingEnergy) .~ B.get (w ^. wdPlayer ^. plActor ^. acEnergy)
+          & (wdPlayer . plActor . acEnergy) %~ B.set 0
+      else
+        w
+      
+    restoreSkipTurnEnergy w =
+      if w ^. wdPlayer ^. plActor ^. acSkipMove
+      then
+        -- Restore and pending energy, up to the player's max energy level
+        w & (wdPlayer . plActor . acEnergy) %~ B.update ((w ^. wdPlayer ^. plPendingEnergy) +)
+      else
+        w
+      
+    disableSkip w =
+      updateAllActors w (\_ a -> a & acSkipMove .~ False)
+
+
+randomElement :: Rnd.StdGen -> [a] -> (Maybe a, Rnd.StdGen)
+randomElement g as =
+  let (i, next) = Rnd.randomR (0, length as - 1) g in
+  (atMay as i, next)

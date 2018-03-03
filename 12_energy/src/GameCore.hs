@@ -16,6 +16,7 @@ import           Control.Lens.TH (makeLenses)
 
 import qualified GameHost as Host
 import qualified EntityType as E
+import qualified BoundedInt as B
 
 data ActorClass = ClassPlayer
                 | ClassEnemy
@@ -31,6 +32,9 @@ data Actor = Actor { _acId :: !Aid
                    , _acFov :: !(Maybe [(WorldPos, [WorldPos])])
                    , _acFovHistory :: !(Set WorldPos)
                    , _acFovDistance :: !Int
+                   , _acEnergy :: !B.BInt -- ^ available energy, bounded
+                   , _acMoveEnergyCost :: !Int
+                   , _acSkipMove :: !Bool
                    }
 
 data Player = Player { _plConn :: !Host.Connection
@@ -38,12 +42,15 @@ data Player = Player { _plConn :: !Host.Connection
                      , _plScreenSize :: !(Int, Int)
                      , _plWorldTopLeft :: !WorldPos
                      , _plViewPortStyle :: !ViewPortStyle
+                     , _plPendingEnergy :: !Int
                      }
 
 data World = World { _wdPlayer :: !Player
                    , _wdConfig :: !Config
                    , _wdMap :: !(Map WorldPos Entity)
                    , _wdActors :: !(Map Aid Actor)
+                   , _wdMinMoveEnergy :: !Int   -- ^ min energy required before any more, regardless of cost, can be attampted
+                   , _wdEnergyIncrements :: !Int -- ^ amount of energy that is added per game loop
                    }
 
 data Config = Config { _cfgKeys :: !(Map Text Text)

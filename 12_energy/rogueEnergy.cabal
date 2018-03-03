@@ -22,6 +22,7 @@ library
                      , Data.Aeson.Text.Extended
                      , Entities
                      , EntityType
+                     , BoundedInt
   build-depends:       base >= 4.7 && < 5
                      , protolude
                      , aeson
