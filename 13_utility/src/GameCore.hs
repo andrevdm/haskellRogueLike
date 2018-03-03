@@ -106,7 +106,6 @@ data PathTo = PathToEntity Path Entity WorldPos
             | PathToPlayer Path Player WorldPos
 
 data Impulse = ImpMoveTowards Path
-             | ImpMoveAway Path
              | ImpMoveRandom
 
 data Disposition = Disposition { _dsSmitten :: Float

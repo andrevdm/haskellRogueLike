@@ -835,7 +835,6 @@ actOnImpulse cost w _actorIfFailed actorIfMoved impulse =
                 (tx - fx, ty - fy, initialStdGen)
               _ -> (0, 0, initialStdGen)
 
-          ImpMoveAway _ -> (0, 0, initialStdGen)
   in
   if dx /=0 || dy /= 0
   then
