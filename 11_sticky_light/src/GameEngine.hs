@@ -5,6 +5,7 @@
 module GameEngine where
 
 import Protolude hiding (Map)
+import qualified Data.Set as Set
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import qualified Data.List as Lst
@@ -143,6 +144,7 @@ bootWorld conn screenSize mapData std =
             , _acStdGen = std
             , _acFovDistance = 3
             , _acFov = Nothing
+            , _acFovHistory = Set.empty
             }
 
     mkEnemyActor aid e (x, y) =
@@ -153,6 +155,7 @@ bootWorld conn screenSize mapData std =
             , _acStdGen = std
             , _acFovDistance = 2
             , _acFov = Nothing
+            , _acFovHistory = Set.empty
             }
     
 
@@ -414,9 +417,17 @@ tryMoveActor world actor (dx, dy) =
           w2 = updatePlayerViewport $ updateActor world movedActor
           pa = w2 ^. wdPlayer ^. plActor
         in
-          Just $ updateActor w2 $ pa & acFov .~ Just (calcFov (pa ^. acFovDistance) (isTransparent $ w2 ^. wdMap) (pa ^. acWorldPos))
+          Just $ updateActor w2 (updateActorFov w2 pa)
       else
         Nothing
+
+  where
+    updateActorFov w a =
+      -- Calculate field of view
+      let fov = calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos) in
+      a & acFov .~ Just fov
+        & acFovHistory %~ Set.union (Set.fromList $ flatFov (Just fov))
+
 
 
 -- | Update either the player's actor, or one of the world actors
@@ -565,9 +576,11 @@ darknessFovOverlay player actor =
                            ] 
 
     lightAt = worldCoordToPlayer (player ^. plWorldTopLeft) <$> flatFov (actor ^. acFov)
+    seen = worldCoordToPlayer (player ^. plWorldTopLeft) <$> Set.toList (actor ^. acFovHistory)
   in
   -- Remove the darkness overlay at any position that is to be lit
-  foldr Map.delete blackBg lightAt
+  --  I.e. any position in the field of view, or previously in the field of view
+  foldr Map.delete blackBg $ lightAt <> seen
 
   
 flatFov :: Maybe [(WorldPos, [WorldPos])] -> [WorldPos]

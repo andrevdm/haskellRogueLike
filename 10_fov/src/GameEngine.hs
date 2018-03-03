@@ -414,9 +414,13 @@ tryMoveActor world actor (dx, dy) =
           w2 = updatePlayerViewport $ updateActor world movedActor
           pa = w2 ^. wdPlayer ^. plActor
         in
-          Just $ updateActor w2 $ pa & acFov .~ Just (calcFov (pa ^. acFovDistance) (isTransparent $ w2 ^. wdMap) (pa ^. acWorldPos))
+          Just $ updateActor w2 (updateActorFov w2 pa)
       else
         Nothing
+
+  where
+    updateActorFov w a =
+      a & acFov .~ Just (calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos))
 
 
 -- | Update either the player's actor, or one of the world actors

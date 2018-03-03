@@ -34,7 +34,7 @@ diff -w -B -a -d -u -b ../09_viewport_scroll/src/GameCore.hs ./src/GameCore.hs
  data Player = Player { _plConn :: !Host.Connection
 diff -w -B -a -d -u -b ../09_viewport_scroll/src/GameEngine.hs ./src/GameEngine.hs
 --- ../09_viewport_scroll/src/GameEngine.hs	2018-03-03 06:47:31.560497471 +0200
-+++ ./src/GameEngine.hs	2018-03-03 06:56:57.829298532 +0200
++++ ./src/GameEngine.hs	2018-03-03 07:42:52.733297248 +0200
 @@ -7,6 +7,7 @@
  import Protolude hiding (Map)
  import           Data.Map.Strict (Map)
@@ -126,7 +126,7 @@ diff -w -B -a -d -u -b ../09_viewport_scroll/src/GameEngine.hs ./src/GameEngine.
      inView (WorldPos (x, y)) _ =
        x >= topX && x < bottomX && y > bottomY && y <= topY
  
-@@ -383,8 +409,12 @@
+@@ -383,11 +409,19 @@
        in
        if canMove
        then
@@ -137,11 +137,18 @@ diff -w -B -a -d -u -b ../09_viewport_scroll/src/GameEngine.hs ./src/GameEngine.
 +          w2 = updatePlayerViewport $ updateActor world movedActor
 +          pa = w2 ^. wdPlayer ^. plActor
 +        in
-+          Just $ updateActor w2 $ pa & acFov .~ Just (calcFov (pa ^. acFovDistance) (isTransparent $ w2 ^. wdMap) (pa ^. acWorldPos))
++          Just $ updateActor w2 (updateActorFov w2 pa)
        else
          Nothing
  
-@@ -459,3 +489,87 @@
++  where
++    updateActorFov w a =
++      a & acFov .~ Just (calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos))
++
+ 
+ -- | Update either the player's actor, or one of the world actors
+ updateActor :: World -> Actor -> World
+@@ -459,3 +493,87 @@
                 | otherwise -> 0
        in
        (x, y)
