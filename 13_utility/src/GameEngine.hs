@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultiWayIf #-}
@@ -27,6 +28,7 @@ import           GameHost (conSendData, conReceiveText)
 import qualified Entities as E
 import qualified EntityType as E
 import qualified BoundedInt as B
+import qualified UtilityBrain as UB
 
 
 runGame :: IO ()
@@ -83,8 +85,19 @@ bootWorld :: Host.Connection -> (Int, Int) -> Text -> Rnd.StdGen -> World
 bootWorld conn screenSize mapData std = 
   let
     config = mkConfig
-    bug = mkEnemyActor "bug1" E.Bug (6, -2)
-    snake = mkEnemyActor "snake1" E.Snake (8, -4)
+    bug = mkEnemyActor "bug1" E.Bug (6, -2) & acUtilities .~ [UB.utilityOfInfatuation, UB.utilityOfWander, UB.utilityOfWanderToExit]
+                                            & acDisposition .~ Disposition { _dsSmitten = 0.8
+                                                                           , _dsWanderlust = 0.35
+                                                                           , _dsWanderlustToExits = 0.4
+                                                                           , _dsSmittenWith = [E.Player]
+                                                                           }
+          
+    snake = mkEnemyActor "snake1" E.Snake (8, -4) & acUtilities .~ [UB.utilityOfWander, UB.utilityOfWanderToExit]
+                                                  & acDisposition .~ Disposition { _dsSmitten = 0
+                                                                                 , _dsWanderlust = 0.35
+                                                                                 , _dsWanderlustToExits = 0.4
+                                                                                 , _dsSmittenWith = []
+                                                                                 }
 
     w1 = World { _wdPlayer = mkPlayer
                , _wdConfig = config
@@ -152,6 +165,8 @@ bootWorld conn screenSize mapData std =
             , _acSkipMove = False
             , _acMoveEnergyCost = 100
             , _acEnergy = B.new 200 100
+            , _acUtilities = []
+            , _acDisposition = UB.emptyDisposition
             }
 
     mkEnemyActor aid e (x, y) =
@@ -166,6 +181,8 @@ bootWorld conn screenSize mapData std =
             , _acSkipMove = False
             , _acMoveEnergyCost = 150
             , _acEnergy = B.new 180 100
+            , _acUtilities = []
+            , _acDisposition = UB.emptyDisposition 
             }
     
 
@@ -737,33 +754,35 @@ playerMoving pendingCost pendingWorld oldWorld =
         runNonPlayerActorLoop $ updateAllActors w' addEnergy
 
     moveAllNonPlayers w =
-      let
-        -- Random directions the actors could move in (no diagonal moves)
-        directions = [(-1,0), (0,-1), (0,1), (1,0)]
-  
-        -- Other actors just try to move in random directions
-        mv aOrig wOrig =
-          let
-            -- Pick a random direction to move
-            (dir, nextStd) = randomElement (aOrig ^. acStdGen) directions 
-            -- Try move, i.e. if there is no wall / actor in the way
-            w2 = tryMoveActor wOrig aOrig $ fromMaybe (0, 0) dir
-          in
-          case w2 of
-            Nothing ->
-              -- Unable to move, so skip a turn. This accumulates energy for the next attempt
-              --  Also update the stdgen for the next time a random number is needed
-              updateActor wOrig $ aOrig & acSkipMove .~ True
-                                        & acStdGen .~ nextStd
+      let mv aOrig wOrig =
+            let
+              inFov = findPathToAllInFov wOrig aOrig 
+              (utilities, wNext) = UB.assessUtilities inFov wOrig aOrig 
+            in
 
-            Just w2' ->
-              -- The actor moved, use the new world but remember to update the stdgen
-              updateActorById w2' (aOrig ^. acId) (\a -> a & acStdGen .~ nextStd)
+            case UB.selectTopUtility utilities of
+              Nothing ->
+                -- No utility = no move, skip
+                updateActorById wNext (aOrig ^. acId) (\a -> a & acSkipMove .~ True)
 
-        -- All actors that have enough energy to move and are not skipping a turn
-        actorsThatCanMove = filter
-                            (\a -> B.get (a ^. acEnergy) >= (w ^. wdMinMoveEnergy) && not (a ^. acSkipMove))
-                            (Map.elems $ w ^. wdActors)
+              Just (_, actorIfMoved, action, _, _) ->
+                let cost = floor . fromIntegral $ aOrig ^. acMoveEnergyCost in
+                
+                if cost > B.get (aOrig ^. acEnergy)
+                then
+                  -- Not enough energy to move, disallow. Set skipMove = True so this is not attempted again before
+                  -- the next actor move (i.e. avoid looping)
+                  wNext & wdActors %~ Map.insert (aOrig ^. acId) (aOrig & acSkipMove .~ True)
+                else
+                  -- Move
+                  let aNext = Map.findWithDefault aOrig (aOrig ^. acId) (wNext ^. wdActors) in
+                    -- actOnImpulse :: Int -> World -> Actor -> Actor -> Impulse -> (Actor -> Actor) -> World
+                  actOnImpulse cost wNext aNext actorIfMoved action
+      in
+
+      let actorsThatCanMove = filter
+                                (\a -> B.get (a ^. acEnergy) >= (w ^. wdMinMoveEnergy) && not (a ^. acSkipMove))
+                                (Map.elems $ w ^. wdActors)
       in
       -- Are the any actors that could still move?
       if null actorsThatCanMove
@@ -772,6 +791,7 @@ playerMoving pendingCost pendingWorld oldWorld =
       else
         -- Give actors that are able to move a chance to move
         foldr mv w actorsThatCanMove
+      
       
     storeSkipTurnEnergy w =
       if w ^. wdPlayer ^. plActor ^. acSkipMove
@@ -794,8 +814,89 @@ playerMoving pendingCost pendingWorld oldWorld =
     disableSkip w =
       updateAllActors w (\_ a -> a & acSkipMove .~ False)
 
+  
+actOnImpulse :: Int -> World -> Actor -> Actor -> Impulse -> World
+actOnImpulse cost w _actorIfFailed actorIfMoved impulse =
+  let (dx, dy, nextStdGen) =
+        let initialStdGen = (actorIfMoved ^. acStdGen) in
+
+        case impulse of
+          ImpMoveRandom ->
+            let
+              (dx', s1) = Rnd.randomR (-1, 1) initialStdGen
+              (dy', s2) = Rnd.randomR (-1, 1) s1 
+            in
+            (dx', dy', s2)
+
+          ImpMoveTowards (Path ps) ->
+            case ps of
+              (_:WorldPos (tx, ty):_) ->
+                let (WorldPos (fx, fy)) = actorIfMoved ^. acWorldPos in
+                (tx - fx, ty - fy, initialStdGen)
+              _ -> (0, 0, initialStdGen)
+
+          ImpMoveAway _ -> (0, 0, initialStdGen)
+  in
+  if dx /=0 || dy /= 0
+  then
+    let worldIfMoved = w & wdActors %~ Map.insert (actorIfMoved ^. acId) actorIfMoved in
+     
+    case tryMoveActor worldIfMoved actorIfMoved (dx, dy) of
+      Nothing ->
+        w & wdActors %~ Map.adjust (\a' -> a' & acStdGen .~ nextStdGen) (actorIfMoved ^. acId)
+
+      Just w' ->
+        w' & wdActors %~ Map.adjust (\a' -> a' & acEnergy %~ B.update (subtract cost)
+                                               & acStdGen .~ nextStdGen
+                                    )
+                                    (actorIfMoved ^. acId)
+  else
+    w & wdActors %~ Map.adjust (\a' -> a' & acStdGen .~ nextStdGen) (actorIfMoved ^. acId)
+
 
 randomElement :: Rnd.StdGen -> [a] -> (Maybe a, Rnd.StdGen)
 randomElement g as =
   let (i, next) = Rnd.randomR (0, length as - 1) g in
   (atMay as i, next)
+
+  
+findPathToAllInFov :: World -> Actor -> [PathTo]
+findPathToAllInFov w a =
+  case a ^. acFov of
+    Nothing -> []
+    Just fov ->
+      let wmap = addActorsToMap w in
+      concat (findPaths wmap <$> fov)
+
+  where
+    findPaths :: Map WorldPos Entity -> (WorldPos, [WorldPos]) -> [PathTo]
+    findPaths wmap (dest, points) =
+      snd $ foldl'
+              (\(trail, paths) atPos -> (trail <> [atPos], paths <> findAt dest wmap (trail <> [atPos]) atPos))
+              ([], [])
+              points
+      
+
+    findAt :: WorldPos -> Map WorldPos Entity -> [WorldPos] -> WorldPos -> [PathTo]
+    findAt dest wmap trail atPos =
+      let ps = if atPos == w ^. wdPlayer ^. plActor ^. acWorldPos
+               then [ PathToPlayer (Path trail) (w ^. wdPlayer) dest
+                    , PathToActor (Path trail) (w ^. wdPlayer ^. plActor) dest
+                    ]
+               else []
+      in
+      let es = case wmap ^.at atPos of
+                 Nothing -> []
+                 Just e -> if e ^. enType == E.Blank
+                              then []
+                              else [PathToEntity (Path trail) e dest]
+      in
+      ps <> es
+
+  
+addActorsToMap :: World -> Map WorldPos Entity
+addActorsToMap w =
+  foldr
+    (\a g -> Map.insert (a ^. acWorldPos) (a ^. acEntity) g)
+    (w ^. wdMap)
+    (getAllActors w)

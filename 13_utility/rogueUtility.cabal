@@ -23,6 +23,7 @@ library
                      , Entities
                      , EntityType
                      , BoundedInt
+                     , UtilityBrain
   build-depends:       base >= 4.7 && < 5
                      , protolude
                      , aeson

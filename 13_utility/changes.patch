@@ -1,1 +1,483 @@
 Common subdirectories: ../12_energy/src/Data and ./src/Data
+diff -w -B -a -d -u -b --new-file ../12_energy/src/GameCore.hs ./src/GameCore.hs
+--- ../12_energy/src/GameCore.hs	2018-03-03 09:22:41.529322630 +0200
++++ ./src/GameCore.hs	2018-03-03 14:39:08.275017608 +0200
+@@ -35,6 +35,17 @@
+                    , _acEnergy :: !B.BInt -- ^ available energy, bounded
+                    , _acMoveEnergyCost :: !Int
+                    , _acSkipMove :: !Bool
++
++                   -- | List of utilities in order of execution
++                   --    Note that the world is threaded through the utilities and can be updated (i.e. in the ([], World) result)
++                   --    The array of results has an updated actor and a score. These are speculative, and are only applied
++                   --    if that utility is selected. The world updates are kept even if nothing is selected
++                   --    This is required because a utility may add a memory even if it can't move and that memory must be kept
++                   --    until its TTL expires
++                   , _acUtilities :: ![World -> Actor -> [PathTo] -> ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)]
++                   
++                   -- | The actor's disposition - the values that define the actors personality
++                   , _acDisposition :: !Disposition
+                    }
+ 
+ data Player = Player { _plConn :: !Host.Connection
+@@ -83,14 +94,32 @@
+                    deriving (Show, Eq)
+ 
+ 
+-makeLenses ''World
+-makeLenses ''Config
+-makeLenses ''Player
+-makeLenses ''Entity
+-makeLenses ''Tile
+-makeLenses ''Actor
+ 
+ 
++----------------------------------------------------------------------------------------
++-- Utility brain types
++----------------------------------------------------------------------------------------
++newtype Path = Path [WorldPos] deriving (Show)
++
++data PathTo = PathToEntity Path Entity WorldPos
++            | PathToActor Path Actor WorldPos
++            | PathToPlayer Path Player WorldPos
++
++data Impulse = ImpMoveTowards Path
++             | ImpMoveAway Path
++             | ImpMoveRandom
++
++data Disposition = Disposition { _dsSmitten :: Float
++                               , _dsWanderlust :: Float
++                               , _dsWanderlustToExits :: Float
++                               , _dsSmittenWith :: [E.EntityType]
++                               } 
++----------------------------------------------------------------------------------------
++
++
++----------------------------------------------------------------------------------------
++-- UI types
++----------------------------------------------------------------------------------------
+ data UiMessage = UiMessage { umCmd :: !Text
+                            , umMessage :: !Text
+                            }
+@@ -142,3 +171,12 @@
+   Txt.unpack . (if toLower then mkLower else identity) . Txt.drop drp . Txt.pack
+   where
+     mkLower t = Txt.toLower (Txt.take 1 t) <> Txt.drop 1 t
++----------------------------------------------------------------------------------------
++
++makeLenses ''World
++makeLenses ''Config
++makeLenses ''Player
++makeLenses ''Entity
++makeLenses ''Tile
++makeLenses ''Actor
++makeLenses ''Disposition
+diff -w -B -a -d -u -b --new-file ../12_energy/src/GameEngine.hs ./src/GameEngine.hs
+--- ../12_energy/src/GameEngine.hs	2018-03-03 16:12:26.781924321 +0200
++++ ./src/GameEngine.hs	2018-03-03 16:11:53.974888899 +0200
+@@ -1,3 +1,4 @@
++{-# OPTIONS_GHC -fno-warn-type-defaults #-}
+ {-# LANGUAGE NoImplicitPrelude #-}
+ {-# LANGUAGE OverloadedStrings #-}
+ {-# LANGUAGE MultiWayIf #-}
+@@ -27,6 +28,7 @@
+ import qualified Entities as E
+ import qualified EntityType as E
+ import qualified BoundedInt as B
++import qualified UtilityBrain as UB
+ 
+ 
+ runGame :: IO ()
+@@ -83,8 +85,19 @@
+ bootWorld conn screenSize mapData std = 
+   let
+     config = mkConfig
+-    bug = mkEnemyActor "bug1" E.Bug (6, -2)
+-    snake = mkEnemyActor "snake1" E.Snake (8, -4)
++    bug = mkEnemyActor "bug1" E.Bug (6, -2) & acUtilities .~ [UB.utilityOfInfatuation, UB.utilityOfWander, UB.utilityOfWanderToExit]
++                                            & acDisposition .~ Disposition { _dsSmitten = 0.8
++                                                                           , _dsWanderlust = 0.35
++                                                                           , _dsWanderlustToExits = 0.4
++                                                                           , _dsSmittenWith = [E.Player]
++                                                                           }
++          
++    snake = mkEnemyActor "snake1" E.Snake (8, -4) & acUtilities .~ [UB.utilityOfWander, UB.utilityOfWanderToExit]
++                                                  & acDisposition .~ Disposition { _dsSmitten = 0
++                                                                                 , _dsWanderlust = 0.35
++                                                                                 , _dsWanderlustToExits = 0.4
++                                                                                 , _dsSmittenWith = []
++                                                                                 }
+ 
+     w1 = World { _wdPlayer = mkPlayer
+                , _wdConfig = config
+@@ -152,6 +165,8 @@
+             , _acSkipMove = False
+             , _acMoveEnergyCost = 100
+             , _acEnergy = B.new 200 100
++            , _acUtilities = []
++            , _acDisposition = UB.emptyDisposition
+             }
+ 
+     mkEnemyActor aid e (x, y) =
+@@ -166,6 +181,8 @@
+             , _acSkipMove = False
+             , _acMoveEnergyCost = 150
+             , _acEnergy = B.new 180 100
++            , _acUtilities = []
++            , _acDisposition = UB.emptyDisposition 
+             }
+     
+ 
+@@ -300,7 +317,7 @@
+     -- Entity base layer
+     entities = mkLayer entityMap
+     -- Darkness
+-    darknessOverlay = darknessFovOverlay (world ^. wdPlayer) (world ^. wdPlayer ^. plActor)
++    darknessOverlay = Map.empty --TODO darknessFovOverlay (world ^. wdPlayer) (world ^. wdPlayer ^. plActor)
+     -- Darkness hides entity
+     baseLayer = Map.union darknessOverlay entities
+ 
+@@ -737,31 +754,33 @@
+         runNonPlayerActorLoop $ updateAllActors w' addEnergy
+ 
+     moveAllNonPlayers w =
++      let mv aOrig wOrig =
+       let
+-        -- Random directions the actors could move in (no diagonal moves)
+-        directions = [(-1,0), (0,-1), (0,1), (1,0)]
+-  
+-        -- Other actors just try to move in random directions
+-        mv aOrig wOrig =
+-          let
+-            -- Pick a random direction to move
+-            (dir, nextStd) = randomElement (aOrig ^. acStdGen) directions 
+-            -- Try move, i.e. if there is no wall / actor in the way
+-            w2 = tryMoveActor wOrig aOrig $ fromMaybe (0, 0) dir
++              inFov = findPathToAllInFov wOrig aOrig 
++              (utilities, wNext) = UB.assessUtilities inFov wOrig aOrig 
+           in
+-          case w2 of
++
++            case UB.selectTopUtility utilities of
+             Nothing ->
+-              -- Unable to move, so skip a turn. This accumulates energy for the next attempt
+-              --  Also update the stdgen for the next time a random number is needed
+-              updateActor wOrig $ aOrig & acSkipMove .~ True
+-                                        & acStdGen .~ nextStd
++                -- No utility = no move, skip
++                updateActorById wNext (aOrig ^. acId) (\a -> a & acSkipMove .~ True)
+ 
+-            Just w2' ->
+-              -- The actor moved, use the new world but remember to update the stdgen
+-              updateActorById w2' (aOrig ^. acId) (\a -> a & acStdGen .~ nextStd)
++              Just (_, actorIfMoved, action, _, _) ->
++                let cost = floor . fromIntegral $ aOrig ^. acMoveEnergyCost in
+ 
+-        -- All actors that have enough energy to move and are not skipping a turn
+-        actorsThatCanMove = filter
++                if cost > B.get (aOrig ^. acEnergy)
++                then
++                  -- Not enough energy to move, disallow. Set skipMove = True so this is not attempted again before
++                  -- the next actor move (i.e. avoid looping)
++                  wNext & wdActors %~ Map.insert (aOrig ^. acId) (aOrig & acSkipMove .~ True)
++                else
++                  -- Move
++                  let aNext = Map.findWithDefault aOrig (aOrig ^. acId) (wNext ^. wdActors) in
++                    -- actOnImpulse :: Int -> World -> Actor -> Actor -> Impulse -> (Actor -> Actor) -> World
++                  actOnImpulse cost wNext aNext actorIfMoved action
++      in
++
++      let actorsThatCanMove = filter
+                             (\a -> B.get (a ^. acEnergy) >= (w ^. wdMinMoveEnergy) && not (a ^. acSkipMove))
+                             (Map.elems $ w ^. wdActors)
+       in
+@@ -795,7 +815,88 @@
+       updateAllActors w (\_ a -> a & acSkipMove .~ False)
+ 
+ 
++actOnImpulse :: Int -> World -> Actor -> Actor -> Impulse -> World
++actOnImpulse cost w _actorIfFailed actorIfMoved impulse =
++  let (dx, dy, nextStdGen) =
++        let initialStdGen = (actorIfMoved ^. acStdGen) in
++
++        case impulse of
++          ImpMoveRandom ->
++            let
++              (dx', s1) = Rnd.randomR (-1, 1) initialStdGen
++              (dy', s2) = Rnd.randomR (-1, 1) s1 
++            in
++            (dx', dy', s2)
++
++          ImpMoveTowards (Path ps) ->
++            case ps of
++              (_:WorldPos (tx, ty):_) ->
++                let (WorldPos (fx, fy)) = actorIfMoved ^. acWorldPos in
++                (tx - fx, ty - fy, initialStdGen)
++              _ -> (0, 0, initialStdGen)
++
++          ImpMoveAway _ -> (0, 0, initialStdGen)
++  in
++  if dx /=0 || dy /= 0
++  then
++    let worldIfMoved = w & wdActors %~ Map.insert (actorIfMoved ^. acId) actorIfMoved in
++     
++    case tryMoveActor worldIfMoved actorIfMoved (dx, dy) of
++      Nothing ->
++        w & wdActors %~ Map.adjust (\a' -> a' & acStdGen .~ nextStdGen) (actorIfMoved ^. acId)
++
++      Just w' ->
++        w' & wdActors %~ Map.adjust (\a' -> a' & acEnergy %~ B.update (subtract cost)
++                                               & acStdGen .~ nextStdGen
++                                    )
++                                    (actorIfMoved ^. acId)
++  else
++    w & wdActors %~ Map.adjust (\a' -> a' & acStdGen .~ nextStdGen) (actorIfMoved ^. acId)
++
++
+ randomElement :: Rnd.StdGen -> [a] -> (Maybe a, Rnd.StdGen)
+ randomElement g as =
+   let (i, next) = Rnd.randomR (0, length as - 1) g in
+   (atMay as i, next)
++
++  
++findPathToAllInFov :: World -> Actor -> [PathTo]
++findPathToAllInFov w a =
++  case a ^. acFov of
++    Nothing -> []
++    Just fov ->
++      let wmap = addActorsToMap w in
++      concat (findPaths wmap <$> fov)
++
++  where
++    findPaths :: Map WorldPos Entity -> (WorldPos, [WorldPos]) -> [PathTo]
++    findPaths wmap (dest, points) =
++      snd $ foldl'
++              (\(trail, paths) atPos -> (trail <> [atPos], paths <> findAt dest wmap (trail <> [atPos]) atPos))
++              ([], [])
++              points
++      
++
++    findAt :: WorldPos -> Map WorldPos Entity -> [WorldPos] -> WorldPos -> [PathTo]
++    findAt dest wmap trail atPos =
++      let ps = if atPos == w ^. wdPlayer ^. plActor ^. acWorldPos
++               then [ PathToPlayer (Path trail) (w ^. wdPlayer) dest
++                    , PathToActor (Path trail) (w ^. wdPlayer ^. plActor) dest
++                    ]
++               else []
++      in
++      let es = case wmap ^.at atPos of
++                 Nothing -> []
++                 Just e -> if e ^. enType == E.Blank
++                              then []
++                              else [PathToEntity (Path trail) e dest]
++      in
++      ps <> es
++
++  
++addActorsToMap :: World -> Map WorldPos Entity
++addActorsToMap w =
++  foldr
++    (\a g -> Map.insert (a ^. acWorldPos) (a ^. acEntity) g)
++    (w ^. wdMap)
++    (getAllActors w)
+diff -w -B -a -d -u -b --new-file ../12_energy/src/UtilityBrain.hs ./src/UtilityBrain.hs
+--- ../12_energy/src/UtilityBrain.hs	1970-01-01 02:00:00.000000000 +0200
++++ ./src/UtilityBrain.hs	2018-03-03 14:44:31.438983761 +0200
+@@ -0,0 +1,197 @@
++{-# OPTIONS_GHC -fno-warn-type-defaults #-}
++{-# LANGUAGE NoImplicitPrelude #-}
++{-# LANGUAGE OverloadedStrings #-}
++{-# LANGUAGE ScopedTypeVariables #-}
++{-# LANGUAGE FlexibleContexts #-}
++
++module UtilityBrain ( selectTopUtility
++                    , assessUtilities
++                    , utilityOfInfatuation
++                    , utilityOfWander
++                    , utilityOfWanderToExit
++                    , emptyDisposition
++                    ) where
++
++import Protolude 
++import qualified Data.List as Lst
++import qualified System.Random as Rnd
++import qualified Control.Arrow as Ar
++import           Control.Lens
++
++import           GameCore
++import qualified EntityType as E
++
++path :: PathTo -> Path
++path (PathToEntity p _ _) = p
++path (PathToActor p _ _) = p
++path (PathToPlayer p _ _) = p
++
++pathPs :: Path -> [WorldPos]
++pathPs (Path p) = p
++
++
++selectTopUtility :: [(Float, Actor, Impulse, Text, Maybe PathTo)]
++                 -> Maybe (Float, Actor, Impulse, Text, Maybe PathTo)
++selectTopUtility rs = 
++  case rs of
++      [] -> Nothing
++
++      (u@(v0,a0,_,_,_):_) -> do
++        -- Get the results with the top scores (fuzzy match)
++        let top = Lst.takeWhile (\(v2,_,_,_,_) -> v2 >= v0 - 0.001) rs 
++
++        -- Get a random index. Grab a StdGen from the first actor, and ignore the new stdgen, its not important here
++        let ((idx, _), rndB) = 
++              let (rndA, rndB') = Rnd.split (a0 ^. acStdGen) in
++              (Rnd.randomR (0, length top - 1) rndA, rndB') 
++
++        case atMay top idx of
++          Just (s, a, i, n, p) -> Just (s, a & acStdGen .~ rndB, i, n, p)
++
++          Nothing -> Just u
++
++  
++-- | See the docs on acUtilities
++-- | Mainly that the world is threaded through utilities and any updates are kept even if no/other utilities are selected
++-- | The actor in the results are speculative and only the actor for the selected utility gets used
++assessUtilities :: [PathTo] -> World -> Actor -> ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
++assessUtilities paths world actor =
++  let
++    (rs, wNext) = foldl' assess ([], world) (actor ^. acUtilities)
++    ranked = rankUtility rs
++  in
++  (ranked, wNext)
++  
++  where
++    assess (hist, w) u =
++      let
++        a = fromMaybe actor $ w ^. wdActors ^.at (actor ^. acId) 
++        (rs, wNext) = u w a paths
++      in
++      (hist <> rs, wNext)
++
++
++rankUtility :: [(Float, Actor, Impulse, Text, Maybe PathTo)] -> [(Float, Actor, Impulse, Text, Maybe PathTo)]
++rankUtility us = 
++  Lst.reverse $ Lst.sortOn (\(x, _, _, _, _) -> x) us
++
++
++clamp :: Float -> Float
++clamp = clampTo 0.0 1.0
++
++
++clampTo :: Float -> Float -> Float -> Float
++clampTo vmin vmax = min vmax . max vmin
++
++
++clip :: Float -> Bool
++clip = clipTo 0.0 1.0
++
++  
++clipTo :: Float -> Float -> Float -> Bool
++clipTo vmin vmax v = v >= vmin && v <= vmax
++
++
++onlyPlayer :: [PathTo] -> [PathTo]
++onlyPlayer =
++  filter go
++  where
++    go PathToPlayer {} = True
++    go _ = False
++
++  
++onlyEntitiesOfType :: [E.EntityType] -> [PathTo] -> [PathTo]
++onlyEntitiesOfType types =
++  filter go
++  where
++    go (PathToEntity _ e _) = e ^. enType `elem` types
++    go _ = False
++
++
++onlyActorClassIn :: [ActorClass] -> [PathTo] -> [PathTo]
++onlyActorClassIn classes =
++  filter go
++  where
++    go (PathToActor _ a _) = a ^. acClass `elem` classes
++    go _ = False
++
++
++onlyWalls :: [PathTo] -> [PathTo]
++onlyWalls = onlyEntitiesOfType [E.Wall]
++
++  
++emptyDisposition :: Disposition
++emptyDisposition = Disposition { _dsSmitten = 0
++                               , _dsWanderlust = 0
++                               , _dsWanderlustToExits = 0
++                               , _dsSmittenWith = []
++                               } 
++
++
++distanceToRange :: PathTo -> Int -> Maybe Float
++distanceToRange pt fov =
++  let (Path p) = path pt in
++  case (p, Lst.reverse p) of
++    ([], _) -> Nothing
++    (_, []) -> Nothing
++    (WorldPos (fx, fy) : _, WorldPos (tx, ty) : _) ->
++      if fx == tx && fy == ty
++      then
++        Nothing
++      else
++        -- Distance to point
++        let distance = sqrt . fromIntegral $ ((tx - fx) ^ 2) + ((ty - fy) ^ 2) in
++        -- Max distance for fov, i.e. cartesian distance to a corner of the fov
++        let maxDist = sqrt ((fromIntegral fov ** 2) * 2) in
++        Just $ distance / maxDist
++      
++
++utilityOfWander :: World -> Actor -> [PathTo] -> ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
++utilityOfWander world actor _paths = 
++  let rule = clamp $ 0.02 * (10 * clamp (actor ^. acDisposition ^. dsWanderlust)) in
++  ([(rule, actor, ImpMoveRandom, "wander", Nothing)], world)
++
++
++utilityOfWanderToExit :: World -> Actor -> [PathTo] -> ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
++utilityOfWanderToExit world actor allPaths =
++  let
++    rule x = clamp $ 1 - (0.04 * x + (1.24 - clamp (actor ^. acDisposition ^. dsWanderlustToExits))) 
++    clampedResults = moveTowardsUtil rule allPaths actor
++  in
++  ((\(p, score) -> (score, actor, ImpMoveTowards (path p), "wander to exit", Just p)) <$> clampedResults, world)
++
++  
++utilityOfInfatuation :: World -> Actor -> [PathTo] -> ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
++utilityOfInfatuation world actor allPaths =
++  let
++    rule x = clamp $ -x ** 4 + clamp (actor ^. acDisposition ^. dsSmitten) 
++    clampedResults = moveTowardsUtil rule allPaths actor
++  in
++  ((\(p, score) -> (score, actor, ImpMoveTowards (path p), "infatuation", Just p)) <$> clampedResults, world)
++
++
++moveTowardsUtil :: (Float -> Float) -> [PathTo] -> Actor -> [(PathTo, Float)]
++moveTowardsUtil rule paths actor =
++  let
++    -- Find exits
++    goalPaths = onlyEntitiesOfType [E.Door] paths
++
++      -- Normalise distances
++    pathsNormalisedMay = (\p -> (p, distanceToRange p (actor ^. acFovDistance))) <$> goalPaths 
++    pathsNormalised = catNormalisedMay pathsNormalisedMay 
++    -- Run utility calculation
++    results = Ar.second rule <$> pathsNormalised 
++    clampedResults = Ar.second clamp <$> results
++  in
++    clampedResults
++
++
++catNormalisedMay :: [(PathTo, Maybe float)] -> [(PathTo, float)]
++catNormalisedMay ps =
++  catMaybes $ go <$> ps
++
++  where
++    go (_, Nothing) = Nothing
++    go (p, Just v) = Just (p, v) 
++
++

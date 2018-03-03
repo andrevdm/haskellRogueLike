@@ -35,6 +35,17 @@ data Actor = Actor { _acId :: !Aid
                    , _acEnergy :: !B.BInt -- ^ available energy, bounded
                    , _acMoveEnergyCost :: !Int
                    , _acSkipMove :: !Bool
+
+                   -- | List of utilities in order of execution
+                   --    Note that the world is threaded through the utilities and can be updated (i.e. in the ([], World) result)
+                   --    The array of results has an updated actor and a score. These are speculative, and are only applied
+                   --    if that utility is selected. The world updates are kept even if nothing is selected
+                   --    This is required because a utility may add a memory even if it can't move and that memory must be kept
+                   --    until its TTL expires
+                   , _acUtilities :: ![World -> Actor -> [PathTo] -> ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)]
+                   
+                   -- | The actor's disposition - the values that define the actors personality
+                   , _acDisposition :: !Disposition
                    }
 
 data Player = Player { _plConn :: !Host.Connection
@@ -83,14 +94,32 @@ data ViewPortStyle = ViewPortCentre
                    deriving (Show, Eq)
 
 
-makeLenses ''World
-makeLenses ''Config
-makeLenses ''Player
-makeLenses ''Entity
-makeLenses ''Tile
-makeLenses ''Actor
 
 
+----------------------------------------------------------------------------------------
+-- Utility brain types
+----------------------------------------------------------------------------------------
+newtype Path = Path [WorldPos] deriving (Show)
+
+data PathTo = PathToEntity Path Entity WorldPos
+            | PathToActor Path Actor WorldPos
+            | PathToPlayer Path Player WorldPos
+
+data Impulse = ImpMoveTowards Path
+             | ImpMoveAway Path
+             | ImpMoveRandom
+
+data Disposition = Disposition { _dsSmitten :: Float
+                               , _dsWanderlust :: Float
+                               , _dsWanderlustToExits :: Float
+                               , _dsSmittenWith :: [E.EntityType]
+                               } 
+----------------------------------------------------------------------------------------
+
+
+----------------------------------------------------------------------------------------
+-- UI types
+----------------------------------------------------------------------------------------
 data UiMessage = UiMessage { umCmd :: !Text
                            , umMessage :: !Text
                            }
@@ -142,3 +171,12 @@ renField drp toLower =
   Txt.unpack . (if toLower then mkLower else identity) . Txt.drop drp . Txt.pack
   where
     mkLower t = Txt.toLower (Txt.take 1 t) <> Txt.drop 1 t
+----------------------------------------------------------------------------------------
+
+makeLenses ''World
+makeLenses ''Config
+makeLenses ''Player
+makeLenses ''Entity
+makeLenses ''Tile
+makeLenses ''Actor
+makeLenses ''Disposition
