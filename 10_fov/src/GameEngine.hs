@@ -7,6 +7,7 @@ module GameEngine where
 import Protolude hiding (Map)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import qualified Data.List as Lst
 import qualified Data.List.Index as Lst
 import qualified Data.Text as Txt
 import qualified Data.Text.IO as Txt
@@ -82,15 +83,22 @@ bootWorld conn screenSize mapData std =
     config = mkConfig
     bug = mkEnemyActor "bug1" E.Bug (6, -2)
     snake = mkEnemyActor "snake1" E.Snake (8, -4)
+
+    w1 = World { _wdPlayer = mkPlayer
+               , _wdConfig = config
+               , _wdMap = loadWorld E.loadTexts mapData
+               , _wdActors = Map.fromList [ (bug ^. acId, bug)
+                                          , (snake ^. acId, snake)
+                                          ]
+               }
+
+    -- The player's actor
+    pa = w1 ^. wdPlayer ^. plActor 
   in
-   
-  World { _wdPlayer = mkPlayer
-        , _wdConfig = config
-        , _wdMap = loadWorld E.loadTexts mapData
-        , _wdActors = Map.fromList [ (bug ^. acId, bug)
-                                   , (snake ^. acId, snake)
-                                   ]
-        }
+
+  -- Calculate the player actor's fov
+  updateActor w1 $ pa & acFov .~ Just (calcFov (pa ^. acFovDistance) (isTransparent $ w1 ^. wdMap) (pa ^. acWorldPos))
+
   where
     mkConfig =
       Config { _cfgKeys = Map.fromList [ ("up"      , "Move:up")
@@ -133,6 +141,8 @@ bootWorld conn screenSize mapData std =
             , _acEntity = E.getEntity E.Player
             , _acWorldPos = WorldPos (1, -1)
             , _acStdGen = std
+            , _acFovDistance = 3
+            , _acFov = Nothing
             }
 
     mkEnemyActor aid e (x, y) =
@@ -141,6 +151,8 @@ bootWorld conn screenSize mapData std =
             , _acEntity = E.getEntity e
             , _acWorldPos = WorldPos (x, y)
             , _acStdGen = std
+            , _acFovDistance = 2
+            , _acFov = Nothing
             }
     
 
@@ -267,13 +279,22 @@ drawTilesForPlayer :: World -> Map WorldPos Entity -> [Map PlayerPos Tile]
 drawTilesForPlayer world entityMap =
   let
     -- Entity base layer
-    entityLayer = mkLayer entityMap
+    entities = mkLayer entityMap
+    -- Darkness
+    darknessOverlay = darknessFovOverlay (world ^. wdPlayer) (world ^. wdPlayer ^. plActor)
+    -- Darkness hides entity
+    baseLayer = Map.union darknessOverlay entities
 
     -- Actor layer on top
     actorMap = Map.fromList $ (\a -> (a ^. acWorldPos, a ^. acEntity)) <$> getAllActors world
-    actorLayer = mkLayer actorMap
+    inViewActors = Map.filterWithKey inView actorMap
+    actorLayer = mkLayer inViewActors
+    visibleActorLayer = Map.filterWithKey (\wp _ -> isNotDarkness wp baseLayer) actorLayer
   in
-    [entityLayer, actorLayer]
+    -- Layers
+    -- 0: Entities (with darkness overlay)
+    -- 1: Actors
+    [baseLayer, visibleActorLayer]
 
   where
     player = world ^. wdPlayer
@@ -287,6 +308,12 @@ drawTilesForPlayer world entityMap =
     -- | Bottom right corner
     (bottomX, bottomY) = (topX + screenX, topY - screenY) 
 
+    isNotDarkness :: PlayerPos -> Map PlayerPos Tile -> Bool
+    isNotDarkness wp ts =
+      case Map.lookup wp ts of
+        Nothing -> True
+        Just t -> t ^. tlId /= E.getTile E.Dark ^. tlId
+  
     inView (WorldPos (x, y)) _ =
       x >= topX && x < bottomX && y > bottomY && y <= topY
 
@@ -382,8 +409,12 @@ tryMoveActor world actor (dx, dy) =
       in
       if canMove
       then
-        let movedActor = actor & acWorldPos .~ tryWorldTo' in
-        Just . updatePlayerViewport $ updateActor world movedActor
+        let
+          movedActor = actor & acWorldPos .~ tryWorldTo'
+          w2 = updatePlayerViewport $ updateActor world movedActor
+          pa = w2 ^. wdPlayer ^. plActor
+        in
+          Just $ updateActor w2 $ pa & acFov .~ Just (calcFov (pa ^. acFovDistance) (isTransparent $ w2 ^. wdMap) (pa ^. acWorldPos))
       else
         Nothing
 
@@ -458,3 +489,87 @@ calcViewPortTopLeft player =
                | otherwise -> 0
       in
       (x, y)
+
+
+-- | Calculate the field of view from a position
+calcFov :: Int -> (WorldPos -> Bool) -> WorldPos -> [(WorldPos, [WorldPos])]
+calcFov fovDistance isEntityTransparent fromPos'@(WorldPos fromPos) =
+  let boundries = getBoundries fromPos' in
+  go <$> boundries
+
+  where
+    getBoundries (WorldPos (x, y)) = boundingPoints fovDistance (WorldPos (x, y))
+
+    go toPos'@(WorldPos toPos) =
+      let line = WorldPos <$> bline fromPos toPos in
+      let isTransparentOrStart p = p == fromPos' || isEntityTransparent p in
+      let (m, r) = Lst.span isTransparentOrStart line in
+      (toPos', m <> Lst.take 1 r)
+
+
+-- | Get the bounds for a fov distance
+boundingPoints :: Int -> WorldPos -> [WorldPos]
+boundingPoints distance (WorldPos (atx, aty)) =
+  Lst.nub $
+    [WorldPos (atx - distance + d, aty - distance) | d <- [0..distance * 2]] <>
+    [WorldPos (atx - distance, aty - distance + d) | d <- [0..distance * 2]] <>
+    [WorldPos (atx - distance + d, aty + distance) | d <- [0..distance * 2]] <>
+    [WorldPos (atx + distance, aty - distance + d) | d <- [0..distance * 2]]
+              
+
+-- | Bresenham's algorithm
+-- | https://wiki.haskell.org/Bresenham%27s_line_drawing_algorithm
+bline :: (Int, Int) -> (Int, Int) -> [(Int, Int)]
+bline pa@(xa, ya) pb@(xb, yb) =
+  let r = map maySwitch . Lst.unfoldr go $ (x1, y1, 0) in
+
+  case r of
+    (p:_) | p == pa -> r
+    _ -> Lst.reverse r
+
+  where
+    steep = abs (yb - ya) > abs (xb - xa)
+    maySwitch = if steep then (\(x,y) -> (y,x)) else identity
+    ((x1, y1), (x2, y2)) = case Lst.sort [maySwitch pa, maySwitch pb] of
+                             [a, b] -> (a, b)
+                             _ -> ((0, 0), (0, 0)) -- This case is never matched, but fixes partial match warning
+    deltax = x2 - x1
+    deltay = abs (y2 - y1)
+    ystep = if y1 < y2 then 1 else -1
+    go (xTemp, yTemp, err)
+        | xTemp > x2 = Nothing
+        | otherwise = Just ((xTemp, yTemp), (xTemp + 1, newY, newError))
+        where
+          tempError = err + deltay
+          (newY, newError) = if (2 * tempError) >= deltax
+                            then (yTemp + ystep, tempError - deltax)
+                            else (yTemp, tempError)
+
+  
+isTransparent :: Map WorldPos Entity -> WorldPos -> Bool
+isTransparent wmap pos =
+  case Map.lookup pos wmap of
+    Nothing -> True
+    Just e -> (e ^. enType) /= E.Wall
+
+  
+darknessFovOverlay :: Player -> Actor -> Map PlayerPos Tile
+darknessFovOverlay player actor =
+  let
+    (screenWidth, screenHeight) = player ^. plScreenSize
+
+    -- Create a full grid of darkness
+    blackBg = Map.fromList [ (PlayerPos (x, y), E.getTile E.Dark)
+                           | x <- [0..(screenWidth - 1)]
+                           , y <- [0..(screenHeight - 1)]
+                           ] 
+
+    lightAt = worldCoordToPlayer (player ^. plWorldTopLeft) <$> flatFov (actor ^. acFov)
+  in
+  -- Remove the darkness overlay at any position that is to be lit
+  foldr Map.delete blackBg lightAt
+
+  
+flatFov :: Maybe [(WorldPos, [WorldPos])] -> [WorldPos]
+flatFov Nothing = []
+flatFov (Just fov) = Lst.nub . Lst.concat $ snd <$> fov

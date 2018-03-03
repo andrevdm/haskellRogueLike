@@ -1,183 +1,231 @@
-Common subdirectories: ../08_layers/src/Data and ./src/Data
-diff -w -B -a -d -u -b ../08_layers/src/GameCore.hs ./src/GameCore.hs
---- ../08_layers/src/GameCore.hs	2018-02-24 10:14:00.836125289 +0200
-+++ ./src/GameCore.hs	2018-02-24 11:42:08.035901655 +0200
-@@ -34,6 +34,7 @@
-                      , _plActor :: !Actor
-                      , _plScreenSize :: !(Int, Int)
-                      , _plWorldTopLeft :: !WorldPos
-+                     , _plViewPortStyle :: !ViewPortStyle
-                      }
+Common subdirectories: ../09_viewport_scroll/src/Data and ./src/Data
+diff -w -B -a -d -u -b ../09_viewport_scroll/src/Entities.hs ./src/Entities.hs
+--- ../09_viewport_scroll/src/Entities.hs	2018-02-24 11:08:40.560457089 +0200
++++ ./src/Entities.hs	2018-03-02 19:02:24.432138189 +0200
+@@ -22,6 +22,7 @@
+            , (E.Player    , ( 8,  3), Nothing)
+            , (E.Bug       , (25,  3), Nothing)
+            , (E.Snake     , (38,  4), Nothing)
++           , (E.Dark      , (43, 11), Nothing)
+            ]
+   in
+   let mkData (typ, pos@(x, y), l) (tiles', entities', loads') =
+diff -w -B -a -d -u -b ../09_viewport_scroll/src/EntityType.hs ./src/EntityType.hs
+--- ../09_viewport_scroll/src/EntityType.hs	2018-02-24 11:08:40.560457089 +0200
++++ ./src/EntityType.hs	2018-03-02 19:02:31.400399053 +0200
+@@ -11,5 +11,6 @@
+                 | Player
+                 | Bug
+                 | Snake
++                | Dark
+                 | Unknown
+                 deriving (Show, Eq, Ord)
+diff -w -B -a -d -u -b ../09_viewport_scroll/src/GameCore.hs ./src/GameCore.hs
+--- ../09_viewport_scroll/src/GameCore.hs	2018-02-24 11:42:08.035901655 +0200
++++ ./src/GameCore.hs	2018-02-27 18:31:55.730545080 +0200
+@@ -28,6 +28,8 @@
+                    , _acEntity :: !Entity
+                    , _acWorldPos :: !WorldPos
+                    , _acStdGen :: !Rnd.StdGen
++                   , _acFov :: !(Maybe [(WorldPos, [WorldPos])])
++                   , _acFovDistance :: !Int
+                    }
  
- data World = World { _wdPlayer :: !Player
-@@ -61,7 +62,16 @@
- newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
- newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
- 
--newtype RogueAction = ActMovePlayer (Int, Int)
-+data RogueAction = ActMovePlayer (Int, Int)
-+                 | ActSetPlayerViewPortStyle ViewPortStyle
+ data Player = Player { _plConn :: !Host.Connection
+diff -w -B -a -d -u -b ../09_viewport_scroll/src/GameEngine.hs ./src/GameEngine.hs
+--- ../09_viewport_scroll/src/GameEngine.hs	2018-03-03 06:47:31.560497471 +0200
++++ ./src/GameEngine.hs	2018-03-03 06:56:57.829298532 +0200
+@@ -7,6 +7,7 @@
+ import Protolude hiding (Map)
+ import           Data.Map.Strict (Map)
+ import qualified Data.Map.Strict as Map
++import qualified Data.List as Lst
+ import qualified Data.List.Index as Lst
+ import qualified Data.Text as Txt
+ import qualified Data.Text.IO as Txt
+@@ -82,15 +83,22 @@
+     config = mkConfig
+     bug = mkEnemyActor "bug1" E.Bug (6, -2)
+     snake = mkEnemyActor "snake1" E.Snake (8, -4)
+-  in
+    
+-  World { _wdPlayer = mkPlayer
++    w1 = World { _wdPlayer = mkPlayer
+         , _wdConfig = config
+         , _wdMap = loadWorld E.loadTexts mapData
+         , _wdActors = Map.fromList [ (bug ^. acId, bug)
+                                    , (snake ^. acId, snake)
+                                    ]
+         }
 +
-+data ViewPortStyle = ViewPortCentre
-+                   | ViewPortLock PlayerPos
-+                   | ViewPortScroll
-+                   | ViewPortSnapCentre
-+                   | ViewPortBorder Int
-+                   deriving (Show, Eq)
++    -- The player's actor
++    pa = w1 ^. wdPlayer ^. plActor 
++  in
 +
- 
- makeLenses ''World
- makeLenses ''Config
-diff -w -B -a -d -u -b ../08_layers/src/GameEngine.hs ./src/GameEngine.hs
---- ../08_layers/src/GameEngine.hs	2018-02-24 10:14:22.404073758 +0200
-+++ ./src/GameEngine.hs	2018-02-24 11:47:50.961214658 +0200
-@@ -109,8 +109,14 @@
-                                        , ("end"     , "Move:down-left")
-                                        , ("b"       , "Move:down-left")
-                                        , ("pagedown", "Move:down-right")
++  -- Calculate the player actor's fov
++  updateActor w1 $ pa & acFov .~ Just (calcFov (pa ^. acFovDistance) (isTransparent $ w1 ^. wdMap) (pa ^. acWorldPos))
 +
-+                                       , ("shift+v c", "Game:ViewPort:Centre")
-+                                       , ("shift+v s", "Game:ViewPort:Scroll")
-+                                       , ("shift+v p", "Game:ViewPort:Snap")
-+                                       , ("shift+v b", "Game:ViewPort:Border")
-+                                       , ("shift+v l", "Game:ViewPort:Lock")
-                                        ]
--             , _cfgMinMaxBounds = (0, 30, -30, 0)
-+             , _cfgMinMaxBounds = (-300, 300, -300, 300)
-              }
+   where
+     mkConfig =
+       Config { _cfgKeys = Map.fromList [ ("up"      , "Move:up")
+@@ -133,6 +141,8 @@
+             , _acEntity = E.getEntity E.Player
+             , _acWorldPos = WorldPos (1, -1)
+             , _acStdGen = std
++            , _acFovDistance = 3
++            , _acFov = Nothing
+             }
  
-     mkPlayer =
-@@ -118,6 +124,7 @@
-              , _plScreenSize = screenSize
-              , _plWorldTopLeft = WorldPos (0, 0)
-              , _plActor = mkPlayersActor
-+             , _plViewPortStyle = ViewPortBorder 2
-              }
+     mkEnemyActor aid e (x, y) =
+@@ -141,6 +151,8 @@
+             , _acEntity = E.getEntity e
+             , _acWorldPos = WorldPos (x, y)
+             , _acStdGen = std
++            , _acFovDistance = 2
++            , _acFov = Nothing
+             }
+     
  
-     mkPlayersActor =
-@@ -151,7 +158,7 @@
-       
-     "key" -> do
-       -- Handle the key press
--      atomically $ modifyTVar' worldV (\w -> runActions w $ handleKey cmdData)
-+      atomically $ modifyTVar' worldV (\w -> runActions w $ handleKey w cmdData)
-       -- Get the updated world
-       w2 <- atomically $ readTVar worldV
-       -- Draw
-@@ -304,8 +311,11 @@
-   world ^. wdPlayer ^. plActor : Map.elems (world ^. wdActors)
+@@ -267,14 +279,22 @@
+ drawTilesForPlayer world entityMap =
+   let
+     -- Entity base layer
+-    entityLayer = mkLayer entityMap
++    entities = mkLayer entityMap
++    -- Darkness
++    darknessOverlay = darknessFovOverlay (world ^. wdPlayer) (world ^. wdPlayer ^. plActor)
++    -- Darkness hides entity
++    baseLayer = Map.union darknessOverlay entities
  
+     -- Actor layer on top
+     actorMap = Map.fromList $ (\a -> (a ^. acWorldPos, a ^. acEntity)) <$> getAllActors world
+-    visibleActorMap = Map.filterWithKey inView actorMap
+-    actorLayer = mkLayer visibleActorMap
++    inViewActors = Map.filterWithKey inView actorMap
++    actorLayer = mkLayer inViewActors
++    visibleActorLayer = Map.filterWithKey (\wp _ -> isNotDarkness wp baseLayer) actorLayer
+   in
+-    [entityLayer, actorLayer]
++    -- Layers
++    -- 0: Entities (with darkness overlay)
++    -- 1: Actors
++    [baseLayer, visibleActorLayer]
  
--handleKey :: [Text] -> [RogueAction]
--handleKey (cmd:_) = 
-+handleKey :: World -> [Text] -> [RogueAction]
-+handleKey world (cmd:_) = 
-+  let actor = world ^. wdPlayer ^. plActor in
-+  let topLeft = world ^. wdPlayer ^. plWorldTopLeft in
-+
-   case cmd of
-     "Move:up"         -> [ActMovePlayer ( 0,  1)]
-     "Move:down"       -> [ActMovePlayer ( 0, -1)]
-@@ -315,8 +325,15 @@
-     "Move:up-left"    -> [ActMovePlayer (-1,  1)]
-     "Move:down-right" -> [ActMovePlayer ( 1, -1)]
-     "Move:down-left"  -> [ActMovePlayer (-1, -1)]
-+
-+    "Game:ViewPort:Centre" -> [ActSetPlayerViewPortStyle ViewPortCentre]
-+    "Game:ViewPort:Scroll" -> [ActSetPlayerViewPortStyle ViewPortScroll]
-+    "Game:ViewPort:Snap"   -> [ActSetPlayerViewPortStyle ViewPortSnapCentre]
-+    "Game:ViewPort:Border" -> [ActSetPlayerViewPortStyle $ ViewPortBorder 2]
-+    "Game:ViewPort:Lock"   -> [ActSetPlayerViewPortStyle $ ViewPortLock (worldCoordToPlayer topLeft $ actor ^. acWorldPos)]
-+
-     _                 -> []
--handleKey _ = []
-+handleKey _ _ = []
+   where
+     player = world ^. wdPlayer
+@@ -288,6 +308,12 @@
+     -- | Bottom right corner
+     (bottomX, bottomY) = (topX + screenX, topY - screenY) 
  
++    isNotDarkness :: PlayerPos -> Map PlayerPos Tile -> Bool
++    isNotDarkness wp ts =
++      case Map.lookup wp ts of
++        Nothing -> True
++        Just t -> t ^. tlId /= E.getTile E.Dark ^. tlId
++  
+     inView (WorldPos (x, y)) _ =
+       x >= topX && x < bottomX && y > bottomY && y <= topY
  
- runActions :: World -> [RogueAction] -> World
-@@ -330,6 +347,9 @@
-     ActMovePlayer move  ->
-       fromMaybe world $ tryMoveActor world (world ^. wdPlayer ^. plActor) move
- 
-+    ActSetPlayerViewPortStyle style ->
-+      world & (wdPlayer . plViewPortStyle) .~ style
-+
- 
- tryMoveActor :: World -> Actor -> (Int, Int) -> Maybe World
- tryMoveActor world actor (dx, dy) =
-@@ -363,7 +383,7 @@
+@@ -383,8 +409,12 @@
+       in
        if canMove
        then
-         let movedActor = actor & acWorldPos .~ tryWorldTo' in
--        Just $ updateActor world movedActor
-+        Just . updatePlayerViewport $ updateActor world movedActor
+-        let movedActor = actor & acWorldPos .~ tryWorldTo' in
+-        Just . updatePlayerViewport $ updateActor world movedActor
++        let
++          movedActor = actor & acWorldPos .~ tryWorldTo'
++          w2 = updatePlayerViewport $ updateActor world movedActor
++          pa = w2 ^. wdPlayer ^. plActor
++        in
++          Just $ updateActor w2 $ pa & acFov .~ Just (calcFov (pa ^. acFovDistance) (isTransparent $ w2 ^. wdMap) (pa ^. acWorldPos))
        else
          Nothing
  
-@@ -374,3 +394,66 @@
-   if w ^. wdPlayer ^. plActor ^. acId == (actor ^. acId)
-   then w & (wdPlayer . plActor) .~ actor                         -- update the player's actor
-   else w & wdActors %~ Map.adjust (const actor) (actor ^. acId)  -- update other actor, nop if aid not found
+@@ -459,3 +489,87 @@
+                | otherwise -> 0
+       in
+       (x, y)
 +
 +
-+-- | Update the player's view port
-+updatePlayerViewport :: World -> World
-+updatePlayerViewport w =
-+  let p = w ^. wdPlayer in
-+  w & wdPlayer .~ (p & plWorldTopLeft .~ calcViewPortTopLeft p)
-+
-+
-+calcViewPortTopLeft :: Player -> WorldPos
-+calcViewPortTopLeft player =
-+  let actor = player ^. plActor in
-+
-+  case player ^. plViewPortStyle of
-+    -- These two styles put the player in the viewport, so no need to check
-+    ViewPortCentre -> centreOn (player ^. plScreenSize) (actor ^. acWorldPos)
-+    ViewPortLock focus -> focusOn focus $ actor ^. acWorldPos
-+
-+    _ -> 
-+      let tl@(WorldPos (tX, tY)) = (player ^. plWorldTopLeft) in
-+      let sz@(width, height) = (player ^. plScreenSize) in
-+      let (outX, outY) = distanceOutOfViewPort sz tl (actor ^. acWorldPos) in
-+      
-+      case player ^. plViewPortStyle of
-+        ViewPortSnapCentre ->
-+          if outX /= 0 || outY /= 0
-+          then centreOn (player ^. plScreenSize) (actor ^. acWorldPos)
-+          else player ^. plWorldTopLeft
-+
-+        ViewPortBorder d ->
-+          let (outX', outY') = distanceOutOfViewPort
-+                                 (width - d - d, height - d - d)
-+                                 (WorldPos (tX + d, tY - d))
-+                                 (actor ^. acWorldPos)
-+          in
-+          WorldPos (tX + outX', tY + outY')
-+
-+        _ -> -- default to ViewPortScroll
-+          WorldPos (tX + outX, tY + outY)
++-- | Calculate the field of view from a position
++calcFov :: Int -> (WorldPos -> Bool) -> WorldPos -> [(WorldPos, [WorldPos])]
++calcFov fovDistance isEntityTransparent fromPos'@(WorldPos fromPos) =
++  let boundries = getBoundries fromPos' in
++  go <$> boundries
 +
 +  where
-+    centreOn :: (Int, Int) -> WorldPos -> WorldPos
-+    centreOn (screenWidth, screenHeight) (WorldPos (wAtX, wAtY)) =
-+      let (sMidX, sMidY) = (screenWidth `div` 2, screenHeight `div` 2) in
-+      WorldPos (wAtX - sMidX, wAtY + sMidY)
-+    
-+    
-+    focusOn :: PlayerPos -> WorldPos -> WorldPos
-+    focusOn (PlayerPos (focusX, focusY)) (WorldPos (atX, atY)) =
-+      WorldPos (atX - focusX, atY + focusY)
-+      
-+    
-+    distanceOutOfViewPort :: (Int, Int) -> WorldPos -> WorldPos -> (Int, Int)
-+    distanceOutOfViewPort (screenWidth, screenHeight) (WorldPos (topX, topY)) (WorldPos (atX, atY)) =
-+      let x = if | atX <  topX               -> atX - topX
-+                 | atX >= topX + screenWidth -> atX - topX - screenWidth + 1
-+                 | otherwise -> 0
-+      in
-+      let y = if | atY >  topY                -> atY - topY
-+                 | atY <= topY - screenHeight -> atY - (topY - screenHeight + 1)
-+                 | otherwise -> 0
-+      in
-+      (x, y)
++    getBoundries (WorldPos (x, y)) = boundingPoints fovDistance (WorldPos (x, y))
++
++    go toPos'@(WorldPos toPos) =
++      let line = WorldPos <$> bline fromPos toPos in
++      let isTransparentOrStart p = p == fromPos' || isEntityTransparent p in
++      let (m, r) = Lst.span isTransparentOrStart line in
++      (toPos', m <> Lst.take 1 r)
++
++
++-- | Get the bounds for a fov distance
++boundingPoints :: Int -> WorldPos -> [WorldPos]
++boundingPoints distance (WorldPos (atx, aty)) =
++  Lst.nub $
++    [WorldPos (atx - distance + d, aty - distance) | d <- [0..distance * 2]] <>
++    [WorldPos (atx - distance, aty - distance + d) | d <- [0..distance * 2]] <>
++    [WorldPos (atx - distance + d, aty + distance) | d <- [0..distance * 2]] <>
++    [WorldPos (atx + distance, aty - distance + d) | d <- [0..distance * 2]]
++              
++
++-- | Bresenham's algorithm
++-- | https://wiki.haskell.org/Bresenham%27s_line_drawing_algorithm
++bline :: (Int, Int) -> (Int, Int) -> [(Int, Int)]
++bline pa@(xa, ya) pb@(xb, yb) =
++  let r = map maySwitch . Lst.unfoldr go $ (x1, y1, 0) in
++
++  case r of
++    (p:_) | p == pa -> r
++    _ -> Lst.reverse r
++
++  where
++    steep = abs (yb - ya) > abs (xb - xa)
++    maySwitch = if steep then (\(x,y) -> (y,x)) else identity
++    ((x1, y1), (x2, y2)) = case Lst.sort [maySwitch pa, maySwitch pb] of
++                             [a, b] -> (a, b)
++                             _ -> ((0, 0), (0, 0)) -- This case is never matched, but fixes partial match warning
++    deltax = x2 - x1
++    deltay = abs (y2 - y1)
++    ystep = if y1 < y2 then 1 else -1
++    go (xTemp, yTemp, err)
++        | xTemp > x2 = Nothing
++        | otherwise = Just ((xTemp, yTemp), (xTemp + 1, newY, newError))
++        where
++          tempError = err + deltay
++          (newY, newError) = if (2 * tempError) >= deltax
++                            then (yTemp + ystep, tempError - deltax)
++                            else (yTemp, tempError)
++
++  
++isTransparent :: Map WorldPos Entity -> WorldPos -> Bool
++isTransparent wmap pos =
++  case Map.lookup pos wmap of
++    Nothing -> True
++    Just e -> (e ^. enType) /= E.Wall
++
++  
++darknessFovOverlay :: Player -> Actor -> Map PlayerPos Tile
++darknessFovOverlay player actor =
++  let
++    (screenWidth, screenHeight) = player ^. plScreenSize
++
++    -- Create a full grid of darkness
++    blackBg = Map.fromList [ (PlayerPos (x, y), E.getTile E.Dark)
++                           | x <- [0..(screenWidth - 1)]
++                           , y <- [0..(screenHeight - 1)]
++                           ] 
++
++    lightAt = worldCoordToPlayer (player ^. plWorldTopLeft) <$> flatFov (actor ^. acFov)
++  in
++  -- Remove the darkness overlay at any position that is to be lit
++  foldr Map.delete blackBg lightAt
++
++  
++flatFov :: Maybe [(WorldPos, [WorldPos])] -> [WorldPos]
++flatFov Nothing = []
++flatFov (Just fov) = Lst.nub . Lst.concat $ snd <$> fov

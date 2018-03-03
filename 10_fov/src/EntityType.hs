@@ -11,5 +11,6 @@ data EntityType = Blank
                 | Player
                 | Bug
                 | Snake
+                | Dark
                 | Unknown
                 deriving (Show, Eq, Ord)

@@ -28,6 +28,8 @@ data Actor = Actor { _acId :: !Aid
                    , _acEntity :: !Entity
                    , _acWorldPos :: !WorldPos
                    , _acStdGen :: !Rnd.StdGen
+                   , _acFov :: !(Maybe [(WorldPos, [WorldPos])])
+                   , _acFovDistance :: !Int
                    }
 
 data Player = Player { _plConn :: !Host.Connection
