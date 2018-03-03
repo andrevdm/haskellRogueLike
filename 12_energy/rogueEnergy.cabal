@@ -1,0 +1,57 @@
+name:                rogueEnergy
+version:             0.0.1.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/andrevdm/rogueLikeDemo
+license:             BSD3
+license-file:        LICENSE
+author:              Andre Van Der Merwe
+maintainer:          andre@andrevdm.com
+copyright:           2018 Andre Van Der Merwe
+category:            Game
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+
+library
+  ghc-options:         -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wcompat -Wredundant-constraints
+  hs-source-dirs:      src
+  exposed-modules:     GameEngine
+                     , GameCore
+                     , GameHost
+                     , Data.Aeson.Text.Extended
+                     , Entities
+                     , EntityType
+  build-depends:       base >= 4.7 && < 5
+                     , protolude
+                     , aeson
+                     , bytestring
+                     , bzlib
+                     , containers
+                     , lens
+                     , safe-exceptions
+                     , scotty
+                     , stm
+                     , text
+                     , wai
+                     , wai-extra
+                     , wai-websockets
+                     , warp
+                     , websockets
+                     , ilist
+                     , random
+  default-language:    Haskell2010
+
+executable rogueEnergy-exe
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wcompat -Wredundant-constraints
+  build-depends:       base
+                     , rogueEnergy
+                     , protolude
+  default-language:    Haskell2010
+
+
+source-repository head
+  type:     git
+  location: https://github.com/andrevdm/rogueLikeDemo
