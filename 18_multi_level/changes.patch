@@ -1,0 +1,52 @@
+diff -w -B -a -d -u -b -r --new-file ../17_levels/src/GameCore.hs ./src/GameCore.hs
+--- ../17_levels/src/GameCore.hs	2018-03-04 13:27:31.823680225 +0200
++++ ./src/GameCore.hs	2018-03-04 13:47:06.483468552 +0200
+@@ -99,6 +99,7 @@
+                    }
+ 
+ data Levels = Levels01
++            | Levels02
+ 
+ newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
+ newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
+diff -w -B -a -d -u -b -r --new-file ../17_levels/src/Levels/Level02.hs ./src/Levels/Level02.hs
+--- ../17_levels/src/Levels/Level02.hs	1970-01-01 02:00:00.000000000 +0200
++++ ./src/Levels/Level02.hs	2018-03-04 13:48:29.440215677 +0200
+@@ -0,0 +1,8 @@
++{-# LANGUAGE NoImplicitPrelude #-}
++
++module Levels.Level02 where
++
++import           GameCore
++
++bootLevel :: World -> World
++bootLevel w1 = w1
+diff -w -B -a -d -u -b -r --new-file ../17_levels/app/Main.hs ./app/Main.hs
+--- ../17_levels/app/Main.hs	2018-03-04 13:30:38.626667916 +0200
++++ ./app/Main.hs	2018-03-04 13:49:55.725235353 +0200
+@@ -9,16 +9,22 @@
+ import qualified GameCore as GC
+ import qualified GameEngine as GE
+ import qualified Levels.Level01 as L01
++import qualified Levels.Level02 as L02
+ 
+ main :: IO ()
+ main = do
+   map01 <- Txt.readFile "worlds/simple.csv"
+-  GE.runGame (getLevel map01)
++  map02 <- Txt.readFile "worlds/level02.csv"
++  GE.runGame (getLevel map01 map02)
+ 
+-getLevel :: Text -> GC.Levels -> GC.Level
+-getLevel map01 GC.Levels01 = GC.Level { GC._lvlName = "L01"
++getLevel :: Text -> Text -> GC.Levels -> GC.Level
++getLevel map01 _ GC.Levels01 = GC.Level { GC._lvlName = "L01"
+                                       , GC._lvlBoot = L01.bootLevel 
+                                       , GC._lvlMapText = map01
+                                       }
++getLevel _ map02 GC.Levels02 = GC.Level { GC._lvlName = "L02"
++                                        , GC._lvlBoot = L02.bootLevel 
++                                        , GC._lvlMapText = map02
++                                        }
+ 
+ 
