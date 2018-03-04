@@ -16,6 +16,7 @@ build:
 	 @$(MAKE) -C 13_utility build
 	 @$(MAKE) -C 14_utility_annotate build
 	 @$(MAKE) -C 15_memory build
+	 @$(MAKE) -C 16_debug build
 
 .PHONY: setup
 setup:
@@ -33,6 +34,7 @@ setup:
 	 @$(MAKE) -C 13_utility setup
 	 @$(MAKE) -C 14_utility_annotate setup
 	 @$(MAKE) -C 15_memory setup
+	 @$(MAKE) -C 16_debug setup
 
 .PHONY: test
 test:
@@ -50,6 +52,7 @@ test:
 	 @$(MAKE) -C 13_utility test
 	 @$(MAKE) -C 14_utility_annotate test
 	 @$(MAKE) -C 15_memory test
+	 @$(MAKE) -C 16_debug test
 
 .PHONY: lint
 lint:
@@ -67,5 +70,6 @@ lint:
 	 @$(MAKE) -C 13_utility lint
 	 @$(MAKE) -C 14_utility_annotate lint
 	 @$(MAKE) -C 15_memory lint
+	 @$(MAKE) -C 16_debug lint
 
 
