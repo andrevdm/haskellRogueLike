@@ -17,6 +17,7 @@ import qualified System.Random as Rnd
 import           Control.Lens.TH (makeLenses)
 import           Control.Monad.Writer.Strict (Writer)
 
+import qualified Memory as M
 import qualified GameHost as Host
 import qualified EntityType as E
 import qualified BoundedInt as B
@@ -50,6 +51,9 @@ data Actor = Actor { _acId :: !Aid
                    
                    -- | The actor's disposition - the values that define the actors personality
                    , _acDisposition :: !Disposition
+
+                   -- | The actor's memory about positions
+                   , _acPosMemory :: !(M.Memory WorldPos)
                    }
 
 data Player = Player { _plConn :: !Host.Connection

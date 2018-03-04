@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 
 module UtilityBrain ( selectTopUtility
                     , assessUtilities
@@ -13,6 +14,7 @@ module UtilityBrain ( selectTopUtility
                     ) where
 
 import Protolude 
+import qualified Data.Map.Strict as Map
 import qualified Data.List as Lst
 import qualified Data.DList as DLst
 import qualified System.Random as Rnd
@@ -20,6 +22,7 @@ import qualified Control.Arrow as Ar
 import           Control.Lens
 import           Control.Monad.Writer.Strict (tell, MonadWriter)
 
+import qualified Memory as M
 import           GameCore
 import qualified EntityType as E
 
@@ -31,6 +34,9 @@ path :: PathTo -> Path
 path (PathToEntity p _ _) = p
 path (PathToActor p _ _) = p
 path (PathToPlayer p _ _) = p
+
+pathPs :: Path -> [WorldPos]
+pathPs (Path p) = p
 
 selectTopUtility :: [(Float, Actor, Impulse, Text, Maybe PathTo)]
                  -> UtilAnnotator (Maybe (Float, Actor, Impulse, Text, Maybe PathTo))
@@ -135,12 +141,30 @@ utilityOfWander world actor _paths = do
 
 
 utilityOfWanderToExit :: World -> Actor -> [PathTo] -> UtilAnnotator ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
-utilityOfWanderToExit world actor allPaths = do
+utilityOfWanderToExit world actor' allPaths = do
   telld $ UeAt "WanderToExit"
+  telld . UeNote $ "at: " <> show (actor' ^. acWorldPos)
+  telld . UeNote $ "goal: " <> show (M.recall "wanderToExit.goal" $ actor' ^. acPosMemory)
+  telld . UeNote $ "avoid: " <> show (M.recall "wanderToExit.avoid" $ actor' ^. acPosMemory)
+  
+  let rule x = clamp $ 1 - (0.04 * x + (1.24 - clamp (actor' ^. acDisposition ^. dsWanderlustToExits))) 
 
-  let rule x = clamp $ 1 - (0.04 * x + (1.24 - clamp (actor ^. acDisposition ^. dsWanderlustToExits))) 
-  let clampedResults = moveTowardsUtil [E.Door] rule allPaths actor
-  pure ((\(p, score) -> (score, actor, ImpMoveTowards (path p), "wander to exit", Just p)) <$> clampedResults, world)
+  -- Find exits
+  let goalPaths = onlyEntitiesOfType [E.Door] allPaths 
+
+  let seek actor paths = do
+        -- Normalise distances
+        let pathsNormalisedMay = (\p -> (p, distanceToRange p (actor ^. acFovDistance))) <$> paths 
+        let pathsNormalised = catNormalisedMay pathsNormalisedMay 
+        -- Run utility calculation
+        let results = Ar.second rule <$> pathsNormalised 
+        let clampedResults = Ar.second clamp <$> results
+        -- Result
+        (\(p, score) -> (score, actor, ImpMoveTowards (path p), "wander to exit", Just p)) <$> clampedResults
+  
+  r <- seekGoal "wanderToExit" world actor' goalPaths seek
+  telld . UeNote $ "res.len= " <> show (length r)
+  pure r
 
   
 utilityOfInfatuation :: World -> Actor -> [PathTo] -> UtilAnnotator ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
@@ -155,6 +179,92 @@ utilityOfInfatuation world actor allPaths = do
   telld . UeNote $ "infatuation: " <> show r2
   
   pure ((\(p, score) -> (score, actor, ImpMoveTowards (path p), "infatuation", Just p)) <$> clampedResults, world)
+
+
+seekGoal :: Text     -- ^ prefix for memory storage
+         -> World
+         -> Actor    -- ^ the moving actor
+         -> [PathTo] -- ^ filtered paths, any one of which is a valid goal
+         -> (Actor -> [PathTo] -> [(Float, Actor, Impulse, Text, Maybe PathTo)]) -- ^ if there is no historic goal, these will be used
+         -> UtilAnnotator ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
+seekGoal memPrefix world actor paths scorePaths = do
+  let keyGoal = memPrefix <> ".goal"
+  let keyAvoid = memPrefix <> ".avoid"
+  let ttlGoal = 50
+  let ttlAvoid = 200
+
+  -- is there already a goal, i.e. already a position the actor is heading towards
+  case mapHeadMay $ M.recall keyGoal (actor ^. acPosMemory) of
+    -- Already seeking a goal
+    Just (goal, _) -> do
+      telld . UeNote $ "seeking goal: " <> show goal
+      
+      --At the goal
+      if goal == actor ^.acWorldPos
+        then do
+          telld . UeNote $ "at goal"
+
+          --Forget the goal and try for next
+          let actor' = actor & acPosMemory %~ M.remember const keyAvoid ttlAvoid goal
+                             & acPosMemory %~ M.forgetAll keyGoal
+
+          let world' = world & wdActors %~ Map.insert (actor ^. acId) actor'
+          seekGoal memPrefix world' actor' (removePathsToAvoid keyAvoid actor' paths) scorePaths
+        else do
+          telld . UeNote $ "not at goal"
+
+          -- Not at the goal, continue towards it
+          -- Only consider paths to the goal
+          let pathsToGoal' = filter (\p -> lastMay (pathPs . path $ p) == Just goal) paths 
+          let pathsToGoal = removePathsToAvoid keyAvoid actor pathsToGoal' 
+
+          selectTopUtility (scorePaths actor pathsToGoal) >>= \case
+            Nothing -> seekGoal memPrefix world (actor & acPosMemory %~ M.forgetAll keyGoal) paths scorePaths
+
+            Just (score', actor', impulse', name', pathToMay') -> do
+              -- if moving to the goal
+              let actorFinal = 
+                    if Just goal == ((flip atMay 1 . pathPs . path) =<< pathToMay')
+                    then
+                      actor' & acPosMemory %~ M.remember const keyAvoid ttlAvoid goal
+                             & acPosMemory %~ M.forgetAll keyGoal
+                    else
+                      actor'
+              
+              -- seek
+              pure ([(score', actorFinal, impulse', name', pathToMay')], world)
+    
+    -- Not seeking a goal
+    Nothing -> do
+      telld . UeNote $ "not seeking goal"
+
+      -- Score all the paths
+      let newGoals = scorePaths actor $ removePathsToAvoid keyAvoid actor paths 
+      -- Select the top scoring one
+      selectTopUtility newGoals >>= \case
+        Nothing -> pure ([], world) -- Nothing to find apparently
+
+        Just (score', actor', impulse', name', pathToMay') ->
+
+          -- The top scoring utility = our new goal
+          case (pathToMay', (lastMay . pathPs . path) =<< pathToMay') of
+            -- Path to the goal and the goal position
+            (Just pathTo, Just goalPos) -> do
+              let newActor = actor' & acPosMemory %~ M.remember const keyGoal ttlGoal goalPos . M.forgetAll keyGoal 
+              pure ([(score', newActor, impulse', name', Just pathTo)], world)
+
+            -- Nothing to find apparently
+            _ -> pure ([], world)
+
+  where
+    mapHeadMay = headMay . Map.toList
+
+    removePathsToAvoid :: Text -> Actor -> [PathTo] -> [PathTo]
+    removePathsToAvoid keyAvoid a scored =
+      let avoid = M.recall keyAvoid $ a ^. acPosMemory in
+      let isInAvoid p = Map.member p avoid in
+      let shouldInclude p = maybe True (not . isInAvoid) (lastMay p) in
+      filter (\p -> shouldInclude (pathPs . path $ p)) scored
 
 
 moveTowardsUtil :: [E.EntityType] -> (Float -> Float) -> [PathTo] -> Actor -> [(PathTo, Float)]

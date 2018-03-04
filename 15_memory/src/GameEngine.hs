@@ -24,6 +24,7 @@ import qualified Control.Arrow as Ar
 import           Control.Monad.Writer.Strict (runWriter)
 import           Control.Concurrent.STM (atomically, readTVar, newTVar, modifyTVar', TVar)
 
+import qualified Memory as M
 import           GameCore
 import qualified GameHost as Host
 import           GameHost (conSendData, conReceiveText)
@@ -166,6 +167,7 @@ bootWorld conn screenSize mapData std =
             , _acEnergy = B.new 200 100
             , _acUtilities = []
             , _acDisposition = UB.emptyDisposition
+            , _acPosMemory = M.empty
             }
 
     mkEnemyActor aid e (x, y) =
@@ -182,6 +184,7 @@ bootWorld conn screenSize mapData std =
             , _acEnergy = B.new 180 100
             , _acUtilities = []
             , _acDisposition = UB.emptyDisposition 
+            , _acPosMemory = M.empty
             }
     
 
@@ -732,6 +735,7 @@ playerMoving pendingCost pendingWorld oldWorld =
           >>= checkIfNonMove
           >>= checkIfPlayerHasMinEnergy
           >>= runPendingIfPlayerHasEnergy
+          >>= runPlayerTick -- run the tick for the player, this is only run if the move was allowed
           >>= stopIfPlayerCanStillMove
   in
   case playerAttemptedMoveWorld of
@@ -764,6 +768,9 @@ playerMoving pendingCost pendingWorld oldWorld =
       else
         -- disallow
         Left w
+
+    runPlayerTick w =
+      Right $ w & (wdPlayer . plActor) %~ actorTick
 
     stopIfPlayerCanStillMove w =
       let
@@ -935,3 +942,8 @@ addActorsToMap w =
     (\a g -> Map.insert (a ^. acWorldPos) (a ^. acEntity) g)
     (w ^. wdMap)
     (getAllActors w)
+
+  
+actorTick :: Actor -> Actor
+actorTick a =
+  a & acPosMemory %~ M.tick
