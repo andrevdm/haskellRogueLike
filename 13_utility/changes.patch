@@ -1,8 +1,8 @@
 Common subdirectories: ../12_energy/src/Data and ./src/Data
 diff -w -B -a -d -u -b --new-file ../12_energy/src/GameCore.hs ./src/GameCore.hs
 --- ../12_energy/src/GameCore.hs	2018-03-04 08:27:52.254242043 +0200
-+++ ./src/GameCore.hs	2018-03-04 08:27:39.798425100 +0200
-@@ -35,6 +35,17 @@
++++ ./src/GameCore.hs	2018-03-04 08:49:14.592252002 +0200
+@@ -35,6 +35,15 @@
                     , _acEnergy :: !B.BInt -- ^ available energy, bounded
                     , _acMoveEnergyCost :: !Int
                     , _acSkipMove :: !Bool
@@ -11,8 +11,6 @@ diff -w -B -a -d -u -b --new-file ../12_energy/src/GameCore.hs ./src/GameCore.hs
 +                   --    Note that the world is threaded through the utilities and can be updated (i.e. in the ([], World) result)
 +                   --    The array of results has an updated actor and a score. These are speculative, and are only applied
 +                   --    if that utility is selected. The world updates are kept even if nothing is selected
-+                   --    This is required because a utility may add a memory even if it can't move and that memory must be kept
-+                   --    until its TTL expires
 +                   , _acUtilities :: ![World -> Actor -> [PathTo] -> ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)]
 +                   
 +                   -- | The actor's disposition - the values that define the actors personality
@@ -20,7 +18,7 @@ diff -w -B -a -d -u -b --new-file ../12_energy/src/GameCore.hs ./src/GameCore.hs
                     }
  
  data Player = Player { _plConn :: !Host.Connection
-@@ -83,6 +94,31 @@
+@@ -83,6 +92,31 @@
                     deriving (Show, Eq)
  
  
@@ -52,7 +50,7 @@ diff -w -B -a -d -u -b --new-file ../12_energy/src/GameCore.hs ./src/GameCore.hs
  data UiMessage = UiMessage { umCmd :: !Text
                             , umMessage :: !Text
                             }
-@@ -134,7 +170,7 @@
+@@ -134,7 +168,7 @@
    Txt.unpack . (if toLower then mkLower else identity) . Txt.drop drp . Txt.pack
    where
      mkLower t = Txt.toLower (Txt.take 1 t) <> Txt.drop 1 t
@@ -61,13 +59,12 @@ diff -w -B -a -d -u -b --new-file ../12_energy/src/GameCore.hs ./src/GameCore.hs
  
  makeLenses ''World
  makeLenses ''Config
-@@ -142,3 +178,4 @@
+@@ -142,3 +176,4 @@
  makeLenses ''Entity
  makeLenses ''Tile
  makeLenses ''Actor
 \ No newline at end of file
 +makeLenses ''Disposition
-\ No newline at end of file
 diff -w -B -a -d -u -b --new-file ../12_energy/src/GameEngine.hs ./src/GameEngine.hs
 --- ../12_energy/src/GameEngine.hs	2018-03-04 08:15:22.440277532 +0200
 +++ ./src/GameEngine.hs	2018-03-04 08:34:59.520152002 +0200

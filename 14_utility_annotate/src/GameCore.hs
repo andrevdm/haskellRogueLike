@@ -44,8 +44,6 @@ data Actor = Actor { _acId :: !Aid
                    --    Note that the world is threaded through the utilities and can be updated (i.e. in the ([], World) result)
                    --    The array of results has an updated actor and a score. These are speculative, and are only applied
                    --    if that utility is selected. The world updates are kept even if nothing is selected
-                   --    This is required because a utility may add a memory even if it can't move and that memory must be kept
-                   --    until its TTL expires
                    , _acUtilities :: ![World -> Actor -> [PathTo] -> UtilAnnotator ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)]
                    
                    -- | The actor's disposition - the values that define the actors personality
