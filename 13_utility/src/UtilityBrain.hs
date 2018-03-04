@@ -124,7 +124,7 @@ utilityOfWanderToExit :: World -> Actor -> [PathTo] -> ([(Float, Actor, Impulse,
 utilityOfWanderToExit world actor allPaths =
   let
     rule x = clamp $ 1 - (0.04 * x + (1.24 - clamp (actor ^. acDisposition ^. dsWanderlustToExits))) 
-    clampedResults = moveTowardsUtil rule allPaths actor
+    clampedResults = moveTowardsUtil [E.Door] rule allPaths actor
   in
   ((\(p, score) -> (score, actor, ImpMoveTowards (path p), "wander to exit", Just p)) <$> clampedResults, world)
 
@@ -133,16 +133,16 @@ utilityOfInfatuation :: World -> Actor -> [PathTo] -> ([(Float, Actor, Impulse, 
 utilityOfInfatuation world actor allPaths =
   let
     rule x = clamp $ -x ** 4 + clamp (actor ^. acDisposition ^. dsSmitten) 
-    clampedResults = moveTowardsUtil rule allPaths actor
+    clampedResults = moveTowardsUtil (actor ^. acDisposition ^. dsSmittenWith) rule allPaths actor
   in
   ((\(p, score) -> (score, actor, ImpMoveTowards (path p), "infatuation", Just p)) <$> clampedResults, world)
 
 
-moveTowardsUtil :: (Float -> Float) -> [PathTo] -> Actor -> [(PathTo, Float)]
-moveTowardsUtil rule paths actor =
+moveTowardsUtil :: [E.EntityType] -> (Float -> Float) -> [PathTo] -> Actor -> [(PathTo, Float)]
+moveTowardsUtil es rule paths actor =
   let
     -- Find exits
-    goalPaths = onlyEntitiesOfType [E.Door] paths
+    goalPaths = onlyEntitiesOfType es paths
 
       -- Normalise distances
     pathsNormalisedMay = (\p -> (p, distanceToRange p (actor ^. acFovDistance))) <$> goalPaths 

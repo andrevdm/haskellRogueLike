@@ -41,8 +41,8 @@ diff -w -B -a -d -u -b --new-file ../11_sticky_light/src/BoundedInt.hs ./src/Bou
 +  BInt (maxBound, max 0 . min maxBound $ fn v)
 Common subdirectories: ../11_sticky_light/src/Data and ./src/Data
 diff -w -B -a -d -u -b --new-file ../11_sticky_light/src/GameCore.hs ./src/GameCore.hs
---- ../11_sticky_light/src/GameCore.hs	2018-03-03 07:35:23.217997623 +0200
-+++ ./src/GameCore.hs	2018-03-03 09:22:41.529322630 +0200
+--- ../11_sticky_light/src/GameCore.hs	2018-03-04 08:28:02.258095727 +0200
++++ ./src/GameCore.hs	2018-03-04 08:27:52.254242043 +0200
 @@ -16,6 +16,7 @@
  
  import qualified GameHost as Host
@@ -78,8 +78,8 @@ diff -w -B -a -d -u -b --new-file ../11_sticky_light/src/GameCore.hs ./src/GameC
  
  data Config = Config { _cfgKeys :: !(Map Text Text)
 diff -w -B -a -d -u -b --new-file ../11_sticky_light/src/GameEngine.hs ./src/GameEngine.hs
---- ../11_sticky_light/src/GameEngine.hs	2018-03-03 07:49:50.081140686 +0200
-+++ ./src/GameEngine.hs	2018-03-03 16:12:26.781924321 +0200
+--- ../11_sticky_light/src/GameEngine.hs	2018-03-04 08:12:58.236233701 +0200
++++ ./src/GameEngine.hs	2018-03-04 08:15:22.440277532 +0200
 @@ -26,6 +26,7 @@
  import           GameHost (conSendData, conReceiveText)
  import qualified Entities as E
@@ -95,9 +95,9 @@ diff -w -B -a -d -u -b --new-file ../11_sticky_light/src/GameEngine.hs ./src/Gam
 +               , _wdMinMoveEnergy = 100
 +               , _wdEnergyIncrements = 20
                 }
- 
-     -- The player's actor
-@@ -134,6 +137,7 @@
+   in
+   -- Calculate the actors fov
+@@ -130,6 +133,7 @@
               , _plWorldTopLeft = WorldPos (0, 0)
               , _plActor = mkPlayersActor
               , _plViewPortStyle = ViewPortBorder 2
@@ -105,7 +105,7 @@ diff -w -B -a -d -u -b --new-file ../11_sticky_light/src/GameEngine.hs ./src/Gam
               }
  
      mkPlayersActor =
-@@ -145,6 +149,9 @@
+@@ -141,6 +145,9 @@
              , _acFovDistance = 3
              , _acFov = Nothing
              , _acFovHistory = Set.empty
@@ -115,7 +115,7 @@ diff -w -B -a -d -u -b --new-file ../11_sticky_light/src/GameEngine.hs ./src/Gam
              }
  
      mkEnemyActor aid e (x, y) =
-@@ -156,6 +163,9 @@
+@@ -152,6 +159,9 @@
              , _acFovDistance = 2
              , _acFov = Nothing
              , _acFovHistory = Set.empty
@@ -125,7 +125,7 @@ diff -w -B -a -d -u -b --new-file ../11_sticky_light/src/GameEngine.hs ./src/Gam
              }
      
  
-@@ -173,7 +183,13 @@
+@@ -169,7 +179,13 @@
        
      "key" -> do
        -- Handle the key press
@@ -140,10 +140,10 @@ diff -w -B -a -d -u -b --new-file ../11_sticky_light/src/GameEngine.hs ./src/Gam
        -- Get the updated world
        w2 <- atomically $ readTVar worldV
        -- Draw
-@@ -438,6 +454,22 @@
+@@ -433,6 +450,14 @@
    else w & wdActors %~ Map.adjust (const actor) (actor ^. acId)  -- update other actor, nop if aid not found
  
- 
+   
 +-- | Update either the player's actor, or one of the world actors
 +updateActorById :: World -> Aid -> (Actor -> Actor) -> World
 +updateActorById w id update =
@@ -152,18 +152,10 @@ diff -w -B -a -d -u -b --new-file ../11_sticky_light/src/GameEngine.hs ./src/Gam
 +  else w & wdActors %~ Map.adjust update id                          -- update other actor, nop if aid not found
 +
 +  
-+-- | Update all actors, including the player's actor
-+updateAllActors :: World -> (World -> Actor -> Actor) -> World
-+updateAllActors w fn =
-+  let w2 = w & (wdPlayer . plActor) %~ fn w in
-+  let w3 = w2 & wdActors %~ fmap (fn w2) in
-+  w3
-+
-+
- -- | Update the player's view port
- updatePlayerViewport :: World -> World
- updatePlayerViewport w =
-@@ -586,3 +618,184 @@
+ -- | Update all actors, including the player's actor
+ updateAllActors :: World -> (World -> Actor -> Actor) -> World
+ updateAllActors w fn =
+@@ -589,3 +614,184 @@
  flatFov :: Maybe [(WorldPos, [WorldPos])] -> [WorldPos]
  flatFov Nothing = []
  flatFov (Just fov) = Lst.nub . Lst.concat $ snd <$> fov

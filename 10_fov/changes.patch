@@ -21,8 +21,8 @@ diff -w -B -a -d -u -b --new-file ../09_viewport_scroll/src/EntityType.hs ./src/
                  | Unknown
                  deriving (Show, Eq, Ord)
 diff -w -B -a -d -u -b --new-file ../09_viewport_scroll/src/GameCore.hs ./src/GameCore.hs
---- ../09_viewport_scroll/src/GameCore.hs	2018-02-24 11:42:08.035901655 +0200
-+++ ./src/GameCore.hs	2018-02-27 18:31:55.730545080 +0200
+--- ../09_viewport_scroll/src/GameCore.hs	2018-03-04 08:27:12.430830823 +0200
++++ ./src/GameCore.hs	2018-03-04 08:27:02.006986668 +0200
 @@ -28,6 +28,8 @@
                     , _acEntity :: !Entity
                     , _acWorldPos :: !WorldPos
@@ -34,7 +34,7 @@ diff -w -B -a -d -u -b --new-file ../09_viewport_scroll/src/GameCore.hs ./src/Ga
  data Player = Player { _plConn :: !Host.Connection
 diff -w -B -a -d -u -b --new-file ../09_viewport_scroll/src/GameEngine.hs ./src/GameEngine.hs
 --- ../09_viewport_scroll/src/GameEngine.hs	2018-03-03 06:47:31.560497471 +0200
-+++ ./src/GameEngine.hs	2018-03-03 07:42:52.733297248 +0200
++++ ./src/GameEngine.hs	2018-03-04 08:10:35.744878661 +0200
 @@ -7,6 +7,7 @@
  import Protolude hiding (Map)
  import           Data.Map.Strict (Map)
@@ -43,7 +43,7 @@ diff -w -B -a -d -u -b --new-file ../09_viewport_scroll/src/GameEngine.hs ./src/
  import qualified Data.List.Index as Lst
  import qualified Data.Text as Txt
  import qualified Data.Text.IO as Txt
-@@ -82,15 +83,22 @@
+@@ -82,15 +83,19 @@
      config = mkConfig
      bug = mkEnemyActor "bug1" E.Bug (6, -2)
      snake = mkEnemyActor "snake1" E.Snake (8, -4)
@@ -57,18 +57,15 @@ diff -w -B -a -d -u -b --new-file ../09_viewport_scroll/src/GameEngine.hs ./src/
                                     , (snake ^. acId, snake)
                                     ]
          }
-+
-+    -- The player's actor
-+    pa = w1 ^. wdPlayer ^. plActor 
 +  in
 +
-+  -- Calculate the player actor's fov
-+  updateActor w1 $ pa & acFov .~ Just (calcFov (pa ^. acFovDistance) (isTransparent $ w1 ^. wdMap) (pa ^. acWorldPos))
++  -- Calculate the actors fov
++  updateAllActors w1 updateActorFov
 +
    where
      mkConfig =
        Config { _cfgKeys = Map.fromList [ ("up"      , "Move:up")
-@@ -133,6 +141,8 @@
+@@ -133,6 +138,8 @@
              , _acEntity = E.getEntity E.Player
              , _acWorldPos = WorldPos (1, -1)
              , _acStdGen = std
@@ -77,7 +74,7 @@ diff -w -B -a -d -u -b --new-file ../09_viewport_scroll/src/GameEngine.hs ./src/
              }
  
      mkEnemyActor aid e (x, y) =
-@@ -141,6 +151,8 @@
+@@ -141,6 +148,8 @@
              , _acEntity = E.getEntity e
              , _acWorldPos = WorldPos (x, y)
              , _acStdGen = std
@@ -86,7 +83,7 @@ diff -w -B -a -d -u -b --new-file ../09_viewport_scroll/src/GameEngine.hs ./src/
              }
      
  
-@@ -267,14 +279,22 @@
+@@ -267,14 +276,22 @@
  drawTilesForPlayer world entityMap =
    let
      -- Entity base layer
@@ -113,7 +110,7 @@ diff -w -B -a -d -u -b --new-file ../09_viewport_scroll/src/GameEngine.hs ./src/
  
    where
      player = world ^. wdPlayer
-@@ -288,6 +308,12 @@
+@@ -288,6 +305,12 @@
      -- | Bottom right corner
      (bottomX, bottomY) = (topX + screenX, topY - screenY) 
  
@@ -126,7 +123,7 @@ diff -w -B -a -d -u -b --new-file ../09_viewport_scroll/src/GameEngine.hs ./src/
      inView (WorldPos (x, y)) _ =
        x >= topX && x < bottomX && y > bottomY && y <= topY
  
-@@ -383,11 +409,19 @@
+@@ -383,11 +406,19 @@
        in
        if canMove
        then
@@ -141,14 +138,29 @@ diff -w -B -a -d -u -b --new-file ../09_viewport_scroll/src/GameEngine.hs ./src/
        else
          Nothing
  
-+  where
-+    updateActorFov w a =
-+      a & acFov .~ Just (calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos))
++updateActorFov :: World -> Actor -> Actor
++updateActorFov w a =
++  a & acFov .~ Just (calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos))
 +
  
  -- | Update either the player's actor, or one of the world actors
  updateActor :: World -> Actor -> World
-@@ -459,3 +493,87 @@
+@@ -397,6 +428,14 @@
+   else w & wdActors %~ Map.adjust (const actor) (actor ^. acId)  -- update other actor, nop if aid not found
+ 
+ 
++-- | Update all actors, including the player's actor
++updateAllActors :: World -> (World -> Actor -> Actor) -> World
++updateAllActors w fn =
++  let w2 = w & (wdPlayer . plActor) %~ fn w in
++  let w3 = w2 & wdActors %~ fmap (fn w2) in
++  w3
++
++
+ -- | Update the player's view port
+ updatePlayerViewport :: World -> World
+ updatePlayerViewport w =
+@@ -459,3 +498,87 @@
                 | otherwise -> 0
        in
        (x, y)

@@ -92,13 +92,9 @@ bootWorld conn screenSize mapData std =
                                           , (snake ^. acId, snake)
                                           ]
                }
-
-    -- The player's actor
-    pa = w1 ^. wdPlayer ^. plActor 
   in
-
-  -- Calculate the player actor's fov
-  updateActor w1 $ pa & acFov .~ Just (calcFov (pa ^. acFovDistance) (isTransparent $ w1 ^. wdMap) (pa ^. acWorldPos))
+  -- Calculate the actors fov
+  updateAllActors w1 updateActorFov
 
   where
     mkConfig =
@@ -421,13 +417,12 @@ tryMoveActor world actor (dx, dy) =
       else
         Nothing
 
-  where
-    updateActorFov w a =
-      -- Calculate field of view
-      let fov = calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos) in
-      a & acFov .~ Just fov
-        & acFovHistory %~ Set.union (Set.fromList $ flatFov (Just fov))
-
+updateActorFov :: World -> Actor -> Actor
+updateActorFov w a =
+ -- Calculate field of view
+ let fov = calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos) in
+ a & acFov .~ Just fov
+   & acFovHistory %~ Set.union (Set.fromList $ flatFov (Just fov))
 
 
 -- | Update either the player's actor, or one of the world actors
@@ -436,6 +431,14 @@ updateActor w actor =
   if w ^. wdPlayer ^. plActor ^. acId == (actor ^. acId)
   then w & (wdPlayer . plActor) .~ actor                         -- update the player's actor
   else w & wdActors %~ Map.adjust (const actor) (actor ^. acId)  -- update other actor, nop if aid not found
+
+  
+-- | Update all actors, including the player's actor
+updateAllActors :: World -> (World -> Actor -> Actor) -> World
+updateAllActors w fn =
+  let w2 = w & (wdPlayer . plActor) %~ fn w in
+  let w3 = w2 & wdActors %~ fmap (fn w2) in
+  w3
 
 
 -- | Update the player's view port

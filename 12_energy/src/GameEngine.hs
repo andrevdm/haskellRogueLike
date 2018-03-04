@@ -95,13 +95,9 @@ bootWorld conn screenSize mapData std =
                , _wdMinMoveEnergy = 100
                , _wdEnergyIncrements = 20
                }
-
-    -- The player's actor
-    pa = w1 ^. wdPlayer ^. plActor 
   in
-
-  -- Calculate the player actor's fov
-  updateActor w1 $ pa & acFov .~ Just (calcFov (pa ^. acFovDistance) (isTransparent $ w1 ^. wdMap) (pa ^. acWorldPos))
+  -- Calculate the actors fov
+  updateAllActors w1 updateActorFov
 
   where
     mkConfig =
@@ -437,13 +433,13 @@ tryMoveActor world actor (dx, dy) =
       else
         Nothing
 
-  where
-    updateActorFov w a =
-      -- Calculate field of view
-      let fov = calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos) in
-      a & acFov .~ Just fov
-        & acFovHistory %~ Set.union (Set.fromList $ flatFov (Just fov))
 
+updateActorFov :: World -> Actor -> Actor
+updateActorFov w a =
+  -- Calculate field of view
+  let fov = calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos) in
+  a & acFov .~ Just fov
+    & acFovHistory %~ Set.union (Set.fromList $ flatFov (Just fov))
 
 
 -- | Update either the player's actor, or one of the world actors

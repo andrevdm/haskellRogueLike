@@ -108,13 +108,9 @@ bootWorld conn screenSize mapData std =
                , _wdMinMoveEnergy = 100
                , _wdEnergyIncrements = 20
                }
-
-    -- The player's actor
-    pa = w1 ^. wdPlayer ^. plActor 
   in
-
-  -- Calculate the player actor's fov
-  updateActor w1 $ pa & acFov .~ Just (calcFov (pa ^. acFovDistance) (isTransparent $ w1 ^. wdMap) (pa ^. acWorldPos))
+  -- Calculate the actors fov
+  updateAllActors w1 updateActorFov
 
   where
     mkConfig =
@@ -454,13 +450,13 @@ tryMoveActor world actor (dx, dy) =
       else
         Nothing
 
-  where
-    updateActorFov w a =
-      -- Calculate field of view
-      let fov = calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos) in
-      a & acFov .~ Just fov
-        & acFovHistory %~ Set.union (Set.fromList $ flatFov (Just fov))
 
+updateActorFov :: World -> Actor -> Actor
+updateActorFov w a =
+  -- Calculate field of view
+  let fov = calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos) in
+  a & acFov .~ Just fov
+    & acFovHistory %~ Set.union (Set.fromList $ flatFov (Just fov))
 
 
 -- | Update either the player's actor, or one of the world actors
@@ -774,10 +770,7 @@ playerMoving pendingCost pendingWorld oldWorld =
                   -- the next actor move (i.e. avoid looping)
                   wNext & wdActors %~ Map.insert (aOrig ^. acId) (aOrig & acSkipMove .~ True)
                 else
-                  -- Move
-                  let aNext = Map.findWithDefault aOrig (aOrig ^. acId) (wNext ^. wdActors) in
-                    -- actOnImpulse :: Int -> World -> Actor -> Actor -> Impulse -> (Actor -> Actor) -> World
-                  actOnImpulse cost wNext aNext actorIfMoved action
+                  actOnImpulse cost wNext actorIfMoved action
       in
 
       let actorsThatCanMove = filter
@@ -815,8 +808,8 @@ playerMoving pendingCost pendingWorld oldWorld =
       updateAllActors w (\_ a -> a & acSkipMove .~ False)
 
   
-actOnImpulse :: Int -> World -> Actor -> Actor -> Impulse -> World
-actOnImpulse cost w _actorIfFailed actorIfMoved impulse =
+actOnImpulse :: Int -> World -> Actor -> Impulse -> World
+actOnImpulse cost w actorIfMoved impulse =
   let (dx, dy, nextStdGen) =
         let initialStdGen = (actorIfMoved ^. acStdGen) in
 
@@ -845,8 +838,8 @@ actOnImpulse cost w _actorIfFailed actorIfMoved impulse =
         w & wdActors %~ Map.adjust (\a' -> a' & acStdGen .~ nextStdGen) (actorIfMoved ^. acId)
 
       Just w' ->
-        w' & wdActors %~ Map.adjust (\a' -> a' & acEnergy %~ B.update (subtract cost)
-                                               & acStdGen .~ nextStdGen
+        w' & wdActors %~ Map.adjust (\a' -> updateActorFov w' $ a' & acEnergy %~ B.update (subtract cost)
+                                                                   & acStdGen .~ nextStdGen
                                     )
                                     (actorIfMoved ^. acId)
   else

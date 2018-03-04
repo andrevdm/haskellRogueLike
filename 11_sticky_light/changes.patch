@@ -1,7 +1,7 @@
 Common subdirectories: ../10_fov/src/Data and ./src/Data
 diff -w -B -a -d -u -b --new-file ../10_fov/src/GameCore.hs ./src/GameCore.hs
---- ../10_fov/src/GameCore.hs	2018-02-27 18:31:55.730545080 +0200
-+++ ./src/GameCore.hs	2018-03-03 07:35:23.217997623 +0200
+--- ../10_fov/src/GameCore.hs	2018-03-04 08:27:02.006986668 +0200
++++ ./src/GameCore.hs	2018-03-04 08:28:02.258095727 +0200
 @@ -29,6 +29,7 @@
                     , _acWorldPos :: !WorldPos
                     , _acStdGen :: !Rnd.StdGen
@@ -11,8 +11,8 @@ diff -w -B -a -d -u -b --new-file ../10_fov/src/GameCore.hs ./src/GameCore.hs
                     }
  
 diff -w -B -a -d -u -b --new-file ../10_fov/src/GameEngine.hs ./src/GameEngine.hs
---- ../10_fov/src/GameEngine.hs	2018-03-03 07:42:52.733297248 +0200
-+++ ./src/GameEngine.hs	2018-03-03 07:49:50.081140686 +0200
+--- ../10_fov/src/GameEngine.hs	2018-03-04 08:10:35.744878661 +0200
++++ ./src/GameEngine.hs	2018-03-04 08:12:58.236233701 +0200
 @@ -5,6 +5,7 @@
  module GameEngine where
  
@@ -21,7 +21,7 @@ diff -w -B -a -d -u -b --new-file ../10_fov/src/GameEngine.hs ./src/GameEngine.h
  import           Data.Map.Strict (Map)
  import qualified Data.Map.Strict as Map
  import qualified Data.List as Lst
-@@ -143,6 +144,7 @@
+@@ -140,6 +140,7 @@
              , _acStdGen = std
              , _acFovDistance = 3
              , _acFov = Nothing
@@ -29,7 +29,7 @@ diff -w -B -a -d -u -b --new-file ../10_fov/src/GameEngine.hs ./src/GameEngine.h
              }
  
      mkEnemyActor aid e (x, y) =
-@@ -153,6 +155,7 @@
+@@ -150,6 +151,7 @@
              , _acStdGen = std
              , _acFovDistance = 2
              , _acFov = Nothing
@@ -37,20 +37,19 @@ diff -w -B -a -d -u -b --new-file ../10_fov/src/GameEngine.hs ./src/GameEngine.h
              }
      
  
-@@ -420,7 +423,11 @@
+@@ -417,7 +419,10 @@
  
-   where
-     updateActorFov w a =
--      a & acFov .~ Just (calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos))
-+      -- Calculate field of view
-+      let fov = calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos) in
-+      a & acFov .~ Just fov
-+        & acFovHistory %~ Set.union (Set.fromList $ flatFov (Just fov))
-+
+ updateActorFov :: World -> Actor -> Actor
+ updateActorFov w a =
+-  a & acFov .~ Just (calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos))
++ -- Calculate field of view
++ let fov = calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos) in
++ a & acFov .~ Just fov
++   & acFovHistory %~ Set.union (Set.fromList $ flatFov (Just fov))
  
  
  -- | Update either the player's actor, or one of the world actors
-@@ -569,9 +576,11 @@
+@@ -574,9 +579,11 @@
                             ] 
  
      lightAt = worldCoordToPlayer (player ^. plWorldTopLeft) <$> flatFov (actor ^. acFov)
