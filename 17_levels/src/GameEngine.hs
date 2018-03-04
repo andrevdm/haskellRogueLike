@@ -13,7 +13,6 @@ import qualified Data.List as Lst
 import qualified Data.List.Index as Lst
 import qualified Data.DList as DLst
 import qualified Data.Text as Txt
-import qualified Data.Text.IO as Txt
 import qualified Data.Text.Encoding as TxtE
 import qualified Data.Aeson.Text.Extended as Ae
 import qualified Data.ByteString.Lazy as BSL
@@ -44,10 +43,9 @@ manageConnection getLevel conn = do
 
   case parseCommand initCmd of
     Just ("init", cmdData) -> do
-      mapData <- Txt.readFile "worlds/simple.csv"
       std <- Rnd.getStdGen
       
-      case initialiseConnection conn cmdData mapData std getLevel of
+      case initialiseConnection conn cmdData std getLevel of
         Right world -> do
           worldV <- atomically $ newTVar world
           sendConfig conn $ world ^. wdConfig
@@ -74,24 +72,25 @@ manageConnection getLevel conn = do
         _ -> Nothing
       
 
-initialiseConnection :: Host.Connection -> [Text] -> Text -> Rnd.StdGen -> (Levels -> Level) -> Either Text World
-initialiseConnection conn cmdData mapData std getLevel = 
+initialiseConnection :: Host.Connection -> [Text] -> Rnd.StdGen -> (Levels -> Level) -> Either Text World
+initialiseConnection conn cmdData std getLevel = 
   case parseScreenSize cmdData of
     Nothing ->
       Left "missing / invalid screen size"
 
     Just (width, height) ->
-      Right $ bootWorld conn (width, height) mapData std getLevel
+      Right $ bootWorld conn (width, height) std getLevel
 
 
-bootWorld :: Host.Connection -> (Int, Int) -> Text -> Rnd.StdGen -> (Levels -> Level) -> World
-bootWorld conn screenSize mapData std getLevel = 
+bootWorld :: Host.Connection -> (Int, Int) -> Rnd.StdGen -> (Levels -> Level) -> World
+bootWorld conn screenSize std getLevel = 
   let
     config = mkConfig
+    level = getLevel Levels01
 
     w1 = World { _wdPlayer = mkPlayer
                , _wdConfig = config
-               , _wdMap = loadWorld E.loadTexts mapData
+               , _wdMap = loadWorld E.loadTexts $ level ^. lvlMapText
                , _wdActors = Map.fromList []
                , _wdMinMoveEnergy = 100
                , _wdEnergyIncrements = 20
@@ -99,7 +98,7 @@ bootWorld conn screenSize mapData std getLevel =
                , _wdGetLevel = getLevel
                }
 
-    w2 = getLevel Levels01 ^. lvlBoot $ w1
+    w2 = level ^. lvlBoot $ w1
   in
   -- Calculate the actors fov
   updateAllActors w2 updateActorFov

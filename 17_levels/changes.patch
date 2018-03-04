@@ -1,6 +1,6 @@
 diff -w -B -a -d -u -b -r --new-file ../16_debug/src/GameCore.hs ./src/GameCore.hs
 --- ../16_debug/src/GameCore.hs	2018-03-04 10:57:56.802067493 +0200
-+++ ./src/GameCore.hs	2018-03-04 12:26:18.971517436 +0200
++++ ./src/GameCore.hs	2018-03-04 13:27:31.823680225 +0200
 @@ -74,6 +74,7 @@
                     , _wdMinMoveEnergy :: !Int   -- ^ min energy required before any more, regardless of cost, can be attampted
                     , _wdEnergyIncrements :: !Int -- ^ amount of energy that is added per game loop
@@ -9,12 +9,13 @@ diff -w -B -a -d -u -b -r --new-file ../16_debug/src/GameCore.hs ./src/GameCore.
                     }
  
  data Config = Config { _cfgKeys :: !(Map Text Text)
-@@ -92,6 +93,12 @@
+@@ -92,6 +93,13 @@
                       , _enAttribs :: !(Map Text Int)
                       } deriving (Show, Eq, Ord)
  
 +data Level = Level { _lvlName :: !Text
 +                   , _lvlBoot :: !(World -> World)
++                   , _lvlMapText :: !Text
 +                   }
 +
 +data Levels = Levels01
@@ -22,15 +23,23 @@ diff -w -B -a -d -u -b -r --new-file ../16_debug/src/GameCore.hs ./src/GameCore.
  newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
  newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
  
-@@ -204,3 +211,4 @@
+@@ -204,3 +212,4 @@
  makeLenses ''Tile
  makeLenses ''Actor
  makeLenses ''Disposition
 +makeLenses ''Level
 diff -w -B -a -d -u -b -r --new-file ../16_debug/src/GameEngine.hs ./src/GameEngine.hs
 --- ../16_debug/src/GameEngine.hs	2018-03-04 11:25:09.679477906 +0200
-+++ ./src/GameEngine.hs	2018-03-04 12:28:47.362672169 +0200
-@@ -34,12 +34,12 @@
++++ ./src/GameEngine.hs	2018-03-04 13:34:41.937589515 +0200
+@@ -13,7 +13,6 @@
+ import qualified Data.List.Index as Lst
+ import qualified Data.DList as DLst
+ import qualified Data.Text as Txt
+-import qualified Data.Text.IO as Txt
+ import qualified Data.Text.Encoding as TxtE
+ import qualified Data.Aeson.Text.Extended as Ae
+ import qualified Data.ByteString.Lazy as BSL
+@@ -34,20 +33,19 @@
  import qualified UtilityBrain as UB
  
  
@@ -47,36 +56,36 @@ diff -w -B -a -d -u -b -r --new-file ../16_debug/src/GameEngine.hs ./src/GameEng
    initCmd <- conn ^. conReceiveText 
  
    case parseCommand initCmd of
-@@ -47,7 +47,7 @@
-       mapData <- Txt.readFile "worlds/simple.csv"
+     Just ("init", cmdData) -> do
+-      mapData <- Txt.readFile "worlds/simple.csv"
        std <- Rnd.getStdGen
        
 -      case initialiseConnection conn cmdData mapData std of
-+      case initialiseConnection conn cmdData mapData std getLevel of
++      case initialiseConnection conn cmdData std getLevel of
          Right world -> do
            worldV <- atomically $ newTVar world
            sendConfig conn $ world ^. wdConfig
-@@ -74,47 +74,35 @@
+@@ -74,47 +72,36 @@
          _ -> Nothing
        
  
 -initialiseConnection :: Host.Connection -> [Text] -> Text -> Rnd.StdGen -> Either Text World
 -initialiseConnection conn cmdData mapData std = 
-+initialiseConnection :: Host.Connection -> [Text] -> Text -> Rnd.StdGen -> (Levels -> Level) -> Either Text World
-+initialiseConnection conn cmdData mapData std getLevel = 
++initialiseConnection :: Host.Connection -> [Text] -> Rnd.StdGen -> (Levels -> Level) -> Either Text World
++initialiseConnection conn cmdData std getLevel = 
    case parseScreenSize cmdData of
      Nothing ->
        Left "missing / invalid screen size"
  
      Just (width, height) ->
 -      Right $ bootWorld conn (width, height) mapData std
-+      Right $ bootWorld conn (width, height) mapData std getLevel
++      Right $ bootWorld conn (width, height) std getLevel
  
  
 -bootWorld :: Host.Connection -> (Int, Int) -> Text -> Rnd.StdGen -> World
 -bootWorld conn screenSize mapData std = 
-+bootWorld :: Host.Connection -> (Int, Int) -> Text -> Rnd.StdGen -> (Levels -> Level) -> World
-+bootWorld conn screenSize mapData std getLevel = 
++bootWorld :: Host.Connection -> (Int, Int) -> Rnd.StdGen -> (Levels -> Level) -> World
++bootWorld conn screenSize std getLevel = 
    let
      config = mkConfig
 -    bug = mkEnemyActor "bug1" E.Bug (6, -2) & acUtilities .~ [UB.utilityOfInfatuation, UB.utilityOfWander, UB.utilityOfWanderToExit]
@@ -92,13 +101,15 @@ diff -w -B -a -d -u -b -r --new-file ../16_debug/src/GameEngine.hs ./src/GameEng
 -                                                                                 , _dsWanderlustToExits = 0.4
 -                                                                                 , _dsSmittenWith = []
 -                                                                                 }
++    level = getLevel Levels01
  
      w1 = World { _wdPlayer = mkPlayer
                 , _wdConfig = config
-                , _wdMap = loadWorld E.loadTexts mapData
+-               , _wdMap = loadWorld E.loadTexts mapData
 -               , _wdActors = Map.fromList [ (bug ^. acId, bug)
 -                                          , (snake ^. acId, snake)
 -                                          ]
++               , _wdMap = loadWorld E.loadTexts $ level ^. lvlMapText
 +               , _wdActors = Map.fromList []
                 , _wdMinMoveEnergy = 100
                 , _wdEnergyIncrements = 20
@@ -106,7 +117,7 @@ diff -w -B -a -d -u -b -r --new-file ../16_debug/src/GameEngine.hs ./src/GameEng
 +               , _wdGetLevel = getLevel
                 }
 +
-+    w2 = getLevel Levels01 ^. lvlBoot $ w1
++    w2 = level ^. lvlBoot $ w1
    in
    -- Calculate the actors fov
 -  updateAllActors w1 updateActorFov
@@ -114,7 +125,7 @@ diff -w -B -a -d -u -b -r --new-file ../16_debug/src/GameEngine.hs ./src/GameEng
  
    where
      mkConfig =
-@@ -172,24 +160,6 @@
+@@ -172,24 +159,6 @@
              , _acPosMemory = M.empty
              , _acProps = Map.empty
              }
@@ -204,14 +215,15 @@ diff -w -B -a -d -u -b -r --new-file ../16_debug/src/Levels/Level01.hs ./src/Lev
 +            }
 diff -w -B -a -d -u -b -r --new-file ../16_debug/app/Main.hs ./app/Main.hs
 --- ../16_debug/app/Main.hs	2018-03-04 10:50:00.682203134 +0200
-+++ ./app/Main.hs	2018-03-04 12:27:39.395045414 +0200
-@@ -1,12 +1,20 @@
++++ ./app/Main.hs	2018-03-04 13:30:38.626667916 +0200
+@@ -1,12 +1,24 @@
  {-# LANGUAGE NoImplicitPrelude #-}
 +{-# LANGUAGE OverloadedStrings #-}
  
  module Main where
  
  import           Protolude 
++import qualified Data.Text.IO as Txt
    
 +import qualified GameCore as GC
  import qualified GameEngine as GE
@@ -219,11 +231,14 @@ diff -w -B -a -d -u -b -r --new-file ../16_debug/app/Main.hs ./app/Main.hs
  
  main :: IO ()
 -main = GE.runGame
-+main = GE.runGame getLevel
++main = do
++  map01 <- Txt.readFile "worlds/simple.csv"
++  GE.runGame (getLevel map01)
 +
-+getLevel :: GC.Levels -> GC.Level
-+getLevel GC.Levels01 = GC.Level { GC._lvlName = "L01"
-+                                , GC._lvlBoot = L01.bootLevel 
-+                                }
++getLevel :: Text -> GC.Levels -> GC.Level
++getLevel map01 GC.Levels01 = GC.Level { GC._lvlName = "L01"
++                                      , GC._lvlBoot = L01.bootLevel 
++                                      , GC._lvlMapText = map01
++                                      }
  
  

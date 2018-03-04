@@ -95,6 +95,7 @@ data Entity = Entity { _enType :: !E.EntityType
 
 data Level = Level { _lvlName :: !Text
                    , _lvlBoot :: !(World -> World)
+                   , _lvlMapText :: !Text
                    }
 
 data Levels = Levels01
