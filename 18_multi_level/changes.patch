@@ -1,7 +1,40 @@
+diff -w -B -a -d -u -b -r --new-file ../17_levels/src/Entities.hs ./src/Entities.hs
+--- ../17_levels/src/Entities.hs	2018-03-04 11:51:15.942979248 +0200
++++ ./src/Entities.hs	2018-03-04 13:52:24.336887199 +0200
+@@ -23,6 +23,7 @@
+            , (E.Bug       , (25,  3), Nothing)
+            , (E.Snake     , (38,  4), Nothing)
+            , (E.Dark      , (43, 11), Nothing)
++           , (E.Stairs    , (56, 44), Just "s")
+            ]
+   in
+   let mkData (typ, pos@(x, y), l) (tiles', entities', loads') =
+diff -w -B -a -d -u -b -r --new-file ../17_levels/src/EntityType.hs ./src/EntityType.hs
+--- ../17_levels/src/EntityType.hs	2018-03-04 11:51:15.942979248 +0200
++++ ./src/EntityType.hs	2018-03-04 13:52:17.621065268 +0200
+@@ -12,5 +12,6 @@
+                 | Bug
+                 | Snake
+                 | Dark
++                | Stairs
+                 | Unknown
+                 deriving (Show, Eq, Ord)
 diff -w -B -a -d -u -b -r --new-file ../17_levels/src/GameCore.hs ./src/GameCore.hs
 --- ../17_levels/src/GameCore.hs	2018-03-04 13:27:31.823680225 +0200
-+++ ./src/GameCore.hs	2018-03-04 13:47:06.483468552 +0200
-@@ -99,6 +99,7 @@
++++ ./src/GameCore.hs	2018-03-04 15:25:51.874671231 +0200
+@@ -75,6 +75,7 @@
+                    , _wdEnergyIncrements :: !Int -- ^ amount of energy that is added per game loop
+                    , _wdUtilBrainAnnotations :: ![(E.EntityType, [UtilAnnotationEntry], [UtilAnnotationEntry])]
+                    , _wdGetLevel :: !(Levels -> Level)
++                   , _wdLevel :: !Level
+                    }
+ 
+ data Config = Config { _cfgKeys :: !(Map Text Text)
+@@ -96,17 +97,20 @@
+ data Level = Level { _lvlName :: !Text
+                    , _lvlBoot :: !(World -> World)
+                    , _lvlMapText :: !Text
++                   , _lvlTryMove :: !([Actor] -> Maybe E.EntityType -> World -> WorldPos -> Actor -> [RogueAction])
                     }
  
  data Levels = Levels01
@@ -9,22 +42,143 @@ diff -w -B -a -d -u -b -r --new-file ../17_levels/src/GameCore.hs ./src/GameCore
  
  newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
  newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
+ 
+ data RogueAction = ActMovePlayer (Int, Int)
++                 | ActMoveActor Actor WorldPos
+                  | ActSetPlayerViewPortStyle ViewPortStyle
+                  | ActTogglePlayerProp Text Text
+-
++                 | ActGotoLevel Levels
+ 
+ data ViewPortStyle = ViewPortCentre
+                    | ViewPortLock PlayerPos
+diff -w -B -a -d -u -b -r --new-file ../17_levels/src/GameEngine.hs ./src/GameEngine.hs
+--- ../17_levels/src/GameEngine.hs	2018-03-04 13:34:41.937589515 +0200
++++ ./src/GameEngine.hs	2018-03-04 15:38:15.017501601 +0200
+@@ -79,14 +79,14 @@
+       Left "missing / invalid screen size"
+ 
+     Just (width, height) ->
+-      Right $ bootWorld conn (width, height) std getLevel
++      Right $ bootWorld conn (width, height) std getLevel Levels01
+ 
+ 
+-bootWorld :: Host.Connection -> (Int, Int) -> Rnd.StdGen -> (Levels -> Level) -> World
+-bootWorld conn screenSize std getLevel = 
++bootWorld :: Host.Connection -> (Int, Int) -> Rnd.StdGen -> (Levels -> Level) -> Levels -> World
++bootWorld conn screenSize std getLevel startLevel = 
+   let
+     config = mkConfig
+-    level = getLevel Levels01
++    level = getLevel startLevel
+ 
+     w1 = World { _wdPlayer = mkPlayer
+                , _wdConfig = config
+@@ -96,6 +96,7 @@
+                , _wdEnergyIncrements = 20
+                , _wdUtilBrainAnnotations = []
+                , _wdGetLevel = getLevel
++               , _wdLevel = level
+                }
+ 
+     w2 = level ^. lvlBoot $ w1
+@@ -430,6 +431,22 @@
+     ActTogglePlayerProp prop valEnabled ->
+       world & (wdPlayer . plActor . acProps) %~ Map.alter (toggleMapProp valEnabled) prop
+ 
++    ActMoveActor actor worldPos ->
++      let
++        movedActor = actor & acWorldPos .~ worldPos
++        w2 = updatePlayerViewport $ updateActor world movedActor
++        pa = w2 ^. wdPlayer ^. plActor
++      in
++        updateActor w2 (updateActorFov w2 pa)
++
++    ActGotoLevel l ->
++      bootWorld
++        (world ^. wdPlayer ^. plConn)
++        (world ^. wdPlayer ^. plScreenSize)
++        (world ^. wdPlayer ^. plActor ^. acStdGen)
++        (world ^. wdGetLevel)
++        l
++
+   where
+     toggleMapProp v Nothing = Just v
+     toggleMapProp _ (Just _) = Nothing
+@@ -457,23 +474,11 @@
+       destEntityType = _enType <$> destEntity
+       -- Actors at destination
+       destActors = filter (\a -> a ^. acWorldPos == tryWorldTo') (getAllActors world)
+-      -- Is the move allowed
+-      canMove = case (destActors, destEntityType) of
+-                  ([], Just E.Blank) -> True
+-                  ([], Just E.Door) -> True
+-                  ([], Nothing) -> True
+-                  _ -> False
+-      in
+-      if canMove
+-      then
+-        let
+-          movedActor = actor & acWorldPos .~ tryWorldTo'
+-          w2 = updatePlayerViewport $ updateActor world movedActor
+-          pa = w2 ^. wdPlayer ^. plActor
++      -- Get actions
++      actions = (world ^. wdLevel ^. lvlTryMove) destActors destEntityType world tryWorldTo' actor
+         in
+-          Just $ updateActor w2 (updateActorFov w2 pa)
+-      else
+-        Nothing
++   Just $ runActions world actions 
++
+ 
+ updateActorFov :: World -> Actor -> Actor
+ updateActorFov w a =
+diff -w -B -a -d -u -b -r --new-file ../17_levels/src/Levels/Level01.hs ./src/Levels/Level01.hs
+--- ../17_levels/src/Levels/Level01.hs	2018-03-04 12:16:58.960309765 +0200
++++ ./src/Levels/Level01.hs	2018-03-04 15:26:00.007119779 +0200
+@@ -57,3 +57,13 @@
+             , _acPosMemory = M.empty
+             , _acProps = Map.empty
+             }
++
++tryMove :: [Actor] -> Maybe E.EntityType -> World -> WorldPos -> Actor -> [RogueAction]
++tryMove destActors destEntityType _ posTo movingActor =
++  -- Is the move allowed
++  case (destActors, destEntityType) of
++    ([], Just E.Blank) -> [ActMoveActor movingActor posTo]
++    ([], Just E.Door) -> [ActMoveActor movingActor posTo]
++    ([], Nothing) -> [ActMoveActor movingActor posTo]
++    (_, Just E.Stairs) -> [ActGotoLevel Levels02]
++    _ -> []
 diff -w -B -a -d -u -b -r --new-file ../17_levels/src/Levels/Level02.hs ./src/Levels/Level02.hs
 --- ../17_levels/src/Levels/Level02.hs	1970-01-01 02:00:00.000000000 +0200
-+++ ./src/Levels/Level02.hs	2018-03-04 13:48:29.440215677 +0200
-@@ -0,0 +1,8 @@
++++ ./src/Levels/Level02.hs	2018-03-04 15:19:35.842040402 +0200
+@@ -0,0 +1,21 @@
 +{-# LANGUAGE NoImplicitPrelude #-}
 +
 +module Levels.Level02 where
 +
++import           Protolude
++
 +import           GameCore
++import qualified EntityType as E
 +
 +bootLevel :: World -> World
-+bootLevel w1 = w1
++bootLevel w = w
++
++
++tryMove :: [Actor] -> Maybe E.EntityType -> World -> WorldPos -> Actor -> [RogueAction]
++tryMove destActors destEntityType _ posTo movingActor =
++  -- Is the move allowed
++  case (destActors, destEntityType) of
++    ([], Just E.Blank) -> [ActMoveActor movingActor posTo]
++    ([], Just E.Door) -> [ActMoveActor movingActor posTo]
++    ([], Nothing) -> [ActMoveActor movingActor posTo]
++    _ -> []
 diff -w -B -a -d -u -b -r --new-file ../17_levels/app/Main.hs ./app/Main.hs
 --- ../17_levels/app/Main.hs	2018-03-04 13:30:38.626667916 +0200
-+++ ./app/Main.hs	2018-03-04 13:49:55.725235353 +0200
-@@ -9,16 +9,22 @@
++++ ./app/Main.hs	2018-03-04 15:15:02.280162588 +0200
+@@ -9,16 +9,24 @@
  import qualified GameCore as GC
  import qualified GameEngine as GE
  import qualified Levels.Level01 as L01
@@ -43,10 +197,12 @@ diff -w -B -a -d -u -b -r --new-file ../17_levels/app/Main.hs ./app/Main.hs
 +getLevel map01 _ GC.Levels01 = GC.Level { GC._lvlName = "L01"
                                        , GC._lvlBoot = L01.bootLevel 
                                        , GC._lvlMapText = map01
-                                       }
++                                        , GC._lvlTryMove = L01.tryMove
++                                        }
 +getLevel _ map02 GC.Levels02 = GC.Level { GC._lvlName = "L02"
 +                                        , GC._lvlBoot = L02.bootLevel 
 +                                        , GC._lvlMapText = map02
-+                                        }
++                                        , GC._lvlTryMove = L02.tryMove
+                                       }
  
  

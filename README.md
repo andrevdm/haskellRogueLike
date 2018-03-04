@@ -12,7 +12,7 @@
 
 TODO
  - Next (in order)
+   - story (change move player to be a story action)
+   - combat?
 
  - unordered
-   - story (change move player to be a story action)
-   - combat

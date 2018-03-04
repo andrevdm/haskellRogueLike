@@ -57,3 +57,13 @@ bootLevel w1 =
             , _acPosMemory = M.empty
             , _acProps = Map.empty
             }
+
+tryMove :: [Actor] -> Maybe E.EntityType -> World -> WorldPos -> Actor -> [RogueAction]
+tryMove destActors destEntityType _ posTo movingActor =
+  -- Is the move allowed
+  case (destActors, destEntityType) of
+    ([], Just E.Blank) -> [ActMoveActor movingActor posTo]
+    ([], Just E.Door) -> [ActMoveActor movingActor posTo]
+    ([], Nothing) -> [ActMoveActor movingActor posTo]
+    (_, Just E.Stairs) -> [ActGotoLevel Levels02]
+    _ -> []

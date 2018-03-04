@@ -79,14 +79,14 @@ initialiseConnection conn cmdData std getLevel =
       Left "missing / invalid screen size"
 
     Just (width, height) ->
-      Right $ bootWorld conn (width, height) std getLevel
+      Right $ bootWorld conn (width, height) std getLevel Levels01
 
 
-bootWorld :: Host.Connection -> (Int, Int) -> Rnd.StdGen -> (Levels -> Level) -> World
-bootWorld conn screenSize std getLevel = 
+bootWorld :: Host.Connection -> (Int, Int) -> Rnd.StdGen -> (Levels -> Level) -> Levels -> World
+bootWorld conn screenSize std getLevel startLevel = 
   let
     config = mkConfig
-    level = getLevel Levels01
+    level = getLevel startLevel
 
     w1 = World { _wdPlayer = mkPlayer
                , _wdConfig = config
@@ -96,6 +96,7 @@ bootWorld conn screenSize std getLevel =
                , _wdEnergyIncrements = 20
                , _wdUtilBrainAnnotations = []
                , _wdGetLevel = getLevel
+               , _wdLevel = level
                }
 
     w2 = level ^. lvlBoot $ w1
@@ -438,6 +439,14 @@ runAction world action =
       in
         updateActor w2 (updateActorFov w2 pa)
 
+    ActGotoLevel l ->
+      bootWorld
+        (world ^. wdPlayer ^. plConn)
+        (world ^. wdPlayer ^. plScreenSize)
+        (world ^. wdPlayer ^. plActor ^. acStdGen)
+        (world ^. wdGetLevel)
+        l
+
   where
     toggleMapProp v Nothing = Just v
     toggleMapProp _ (Just _) = Nothing
@@ -465,16 +474,11 @@ tryMoveActor world actor (dx, dy) =
       destEntityType = _enType <$> destEntity
       -- Actors at destination
       destActors = filter (\a -> a ^. acWorldPos == tryWorldTo') (getAllActors world)
-      -- Is the move allowed
-      canMove = case (destActors, destEntityType) of
-                  ([], Just E.Blank) -> True
-                  ([], Just E.Door) -> True
-                  ([], Nothing) -> True
-                  _ -> False
-      in
-      if canMove
-      then Just . runAction world $ ActMoveActor actor tryWorldTo'
-      else Nothing
+      -- Get actions
+      actions = (world ^. wdLevel ^. lvlTryMove) destActors destEntityType world tryWorldTo' actor
+   in
+   Just $ runActions world actions 
+
 
 updateActorFov :: World -> Actor -> Actor
 updateActorFov w a =

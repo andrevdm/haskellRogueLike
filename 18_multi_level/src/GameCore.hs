@@ -75,6 +75,7 @@ data World = World { _wdPlayer :: !Player
                    , _wdEnergyIncrements :: !Int -- ^ amount of energy that is added per game loop
                    , _wdUtilBrainAnnotations :: ![(E.EntityType, [UtilAnnotationEntry], [UtilAnnotationEntry])]
                    , _wdGetLevel :: !(Levels -> Level)
+                   , _wdLevel :: !Level
                    }
 
 data Config = Config { _cfgKeys :: !(Map Text Text)
@@ -96,6 +97,7 @@ data Entity = Entity { _enType :: !E.EntityType
 data Level = Level { _lvlName :: !Text
                    , _lvlBoot :: !(World -> World)
                    , _lvlMapText :: !Text
+                   , _lvlTryMove :: !([Actor] -> Maybe E.EntityType -> World -> WorldPos -> Actor -> [RogueAction])
                    }
 
 data Levels = Levels01
@@ -108,7 +110,7 @@ data RogueAction = ActMovePlayer (Int, Int)
                  | ActMoveActor Actor WorldPos
                  | ActSetPlayerViewPortStyle ViewPortStyle
                  | ActTogglePlayerProp Text Text
-
+                 | ActGotoLevel Levels
 
 data ViewPortStyle = ViewPortCentre
                    | ViewPortLock PlayerPos
@@ -116,7 +118,6 @@ data ViewPortStyle = ViewPortCentre
                    | ViewPortSnapCentre
                    | ViewPortBorder Int
                    deriving (Show, Eq)
-
 
 
 
