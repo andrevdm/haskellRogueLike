@@ -12,5 +12,6 @@ data EntityType = Blank
                 | Bug
                 | Snake
                 | Dark
+                | Stairs
                 | Unknown
                 deriving (Show, Eq, Ord)
