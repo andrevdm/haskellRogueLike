@@ -19,6 +19,7 @@ build:
 	 @$(MAKE) -C 16_debug build
 	 @$(MAKE) -C 17_levels build
 	 @$(MAKE) -C 18_multi_level build
+	 @$(MAKE) -C 19_story build
 
 .PHONY: setup
 setup:
@@ -39,6 +40,7 @@ setup:
 	 @$(MAKE) -C 16_debug setup
 	 @$(MAKE) -C 17_levels setup
 	 @$(MAKE) -C 18_multi_level setup
+	 @$(MAKE) -C 19_story setup
 
 .PHONY: test
 test:
@@ -59,6 +61,7 @@ test:
 	 @$(MAKE) -C 16_debug test
 	 @$(MAKE) -C 17_levels test
 	 @$(MAKE) -C 18_multi_level test
+	 @$(MAKE) -C 19_story test
 
 .PHONY: lint
 lint:
@@ -79,5 +82,4 @@ lint:
 	 @$(MAKE) -C 16_debug lint
 	 @$(MAKE) -C 17_levels lint
 	 @$(MAKE) -C 18_multi_level lint
-
-
+	 @$(MAKE) -C 19_story lint
