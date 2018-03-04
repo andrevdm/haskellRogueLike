@@ -14,6 +14,6 @@ TODO
  - Next (in order)
 
  - unordered
+   - levels
    - story (change move player to be a story action)
    - combat
-   - inventory
