@@ -70,7 +70,7 @@ diff -w -B -a -d -u -b --new-file ../12_energy/src/GameCore.hs ./src/GameCore.hs
 \ No newline at end of file
 diff -w -B -a -d -u -b --new-file ../12_energy/src/GameEngine.hs ./src/GameEngine.hs
 --- ../12_energy/src/GameEngine.hs	2018-03-04 08:15:22.440277532 +0200
-+++ ./src/GameEngine.hs	2018-03-04 08:19:18.574955634 +0200
++++ ./src/GameEngine.hs	2018-03-04 08:34:59.520152002 +0200
 @@ -1,3 +1,4 @@
 +{-# OPTIONS_GHC -fno-warn-type-defaults #-}
  {-# LANGUAGE NoImplicitPrelude #-}
@@ -123,15 +123,6 @@ diff -w -B -a -d -u -b --new-file ../12_energy/src/GameEngine.hs ./src/GameEngin
 +            , _acDisposition = UB.emptyDisposition 
              }
      
- 
-@@ -296,7 +313,7 @@
-     -- Entity base layer
-     entities = mkLayer entityMap
-     -- Darkness
--    darknessOverlay = darknessFovOverlay (world ^. wdPlayer) (world ^. wdPlayer ^. plActor)
-+    darknessOverlay = Map.empty --TODO darknessFovOverlay (world ^. wdPlayer) (world ^. wdPlayer ^. plActor)
-     -- Darkness hides entity
-     baseLayer = Map.union darknessOverlay entities
  
 @@ -733,31 +750,30 @@
          runNonPlayerActorLoop $ updateAllActors w' addEnergy

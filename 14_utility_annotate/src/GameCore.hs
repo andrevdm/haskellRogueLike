@@ -8,11 +8,14 @@
 module GameCore where
 
 import           Protolude hiding (Map)
+import qualified Numeric as Num
 import qualified Data.Text as Txt
 import           Data.Map.Strict (Map)
+import           Data.DList (DList)
 import qualified Data.Aeson as Ae
 import qualified System.Random as Rnd
 import           Control.Lens.TH (makeLenses)
+import           Control.Monad.Writer.Strict (Writer)
 
 import qualified GameHost as Host
 import qualified EntityType as E
@@ -23,6 +26,7 @@ data ActorClass = ClassPlayer
                 deriving (Show, Eq)
 
 newtype Aid = Aid Text deriving (Show, Eq, Ord)
+type UtilAnnotator m = Writer (DList UtilAnnotationEntry) m
 
 data Actor = Actor { _acId :: !Aid
                    , _acClass :: !ActorClass
@@ -42,7 +46,7 @@ data Actor = Actor { _acId :: !Aid
                    --    if that utility is selected. The world updates are kept even if nothing is selected
                    --    This is required because a utility may add a memory even if it can't move and that memory must be kept
                    --    until its TTL expires
-                   , _acUtilities :: ![World -> Actor -> [PathTo] -> ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)]
+                   , _acUtilities :: ![World -> Actor -> [PathTo] -> UtilAnnotator ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)]
                    
                    -- | The actor's disposition - the values that define the actors personality
                    , _acDisposition :: !Disposition
@@ -62,6 +66,7 @@ data World = World { _wdPlayer :: !Player
                    , _wdActors :: !(Map Aid Actor)
                    , _wdMinMoveEnergy :: !Int   -- ^ min energy required before any more, regardless of cost, can be attampted
                    , _wdEnergyIncrements :: !Int -- ^ amount of energy that is added per game loop
+                   , _wdUtilBrainAnnotations :: ![(E.EntityType, [UtilAnnotationEntry], [UtilAnnotationEntry])]
                    }
 
 data Config = Config { _cfgKeys :: !(Map Text Text)
@@ -107,12 +112,20 @@ data PathTo = PathToEntity Path Entity WorldPos
 
 data Impulse = ImpMoveTowards Path
              | ImpMoveRandom
+             deriving (Show)
 
 data Disposition = Disposition { _dsSmitten :: Float
                                , _dsWanderlust :: Float
                                , _dsWanderlustToExits :: Float
                                , _dsSmittenWith :: [E.EntityType]
-                               } 
+                               } deriving (Show)
+
+data UtilAnnotationEntry = UeAt Text
+                         | UeSelectTopNone Text
+                         | UeSelectTopAbove Float 
+                         | UeSelectTopOne Float Text Impulse Text
+                         | UeNote Text
+                         deriving (Show)
 ----------------------------------------------------------------------------------------
 
 
@@ -171,6 +184,9 @@ renField drp toLower =
   where
     mkLower t = Txt.toLower (Txt.take 1 t) <> Txt.drop 1 t
 ----------------------------------------------------------------------------------------
+
+showF :: Float -> Text
+showF x = Txt.pack $ Num.showFFloat (Just 2) x ""
 
 makeLenses ''World
 makeLenses ''Config

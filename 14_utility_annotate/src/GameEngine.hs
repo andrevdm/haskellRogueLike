@@ -11,6 +11,7 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import qualified Data.List as Lst
 import qualified Data.List.Index as Lst
+import qualified Data.DList as DLst
 import qualified Data.Text as Txt
 import qualified Data.Text.IO as Txt
 import qualified Data.Text.Encoding as TxtE
@@ -20,6 +21,7 @@ import qualified Codec.Compression.BZip as Bz
 import qualified System.Random as Rnd
 import           Control.Lens (at, _1, (^.), (.~), (%~))
 import qualified Control.Arrow as Ar
+import           Control.Monad.Writer.Strict (runWriter)
 import           Control.Concurrent.STM (atomically, readTVar, newTVar, modifyTVar', TVar)
 
 import           GameCore
@@ -107,14 +109,11 @@ bootWorld conn screenSize mapData std =
                                           ]
                , _wdMinMoveEnergy = 100
                , _wdEnergyIncrements = 20
+               , _wdUtilBrainAnnotations = []
                }
-
-    -- The player's actor
-    pa = w1 ^. wdPlayer ^. plActor 
   in
-
-  -- Calculate the player actor's fov
-  updateActor w1 $ pa & acFov .~ Just (calcFov (pa ^. acFovDistance) (isTransparent $ w1 ^. wdMap) (pa ^. acWorldPos))
+  -- Calculate the actors fov
+  updateAllActors w1 updateActorFov
 
   where
     mkConfig =
@@ -209,6 +208,14 @@ runCmd conn worldV cmd cmdData =
                                       )
       -- Get the updated world
       w2 <- atomically $ readTVar worldV
+
+      -- Handle the annotations
+      -- This is not terribly pretty as its doing a select for update, but its good enough for debugging
+      -- the annotation code can be removed once everything is working
+      let annotations = w2 ^. wdUtilBrainAnnotations 
+      atomically $ modifyTVar' worldV (\w -> w & wdUtilBrainAnnotations .~ [])
+      printAnnotations annotations
+
       -- Draw
       drawAndSend w2
 
@@ -217,6 +224,35 @@ runCmd conn worldV cmd cmdData =
 
   where
     updatePlayer f = atomically $ modifyTVar' worldV (\w -> w & wdPlayer %~ f)
+
+    printAnnotations as = do
+      putText ""
+      putText ""
+      putText ""
+      putText ""
+      putText "***** Utility Annotations **************"
+      traverse_ printAnnotation as
+      putText "****************************************"
+      putText ""
+
+    printAnnotation (e, assess, top)  = do
+      putText ""
+      putText $ "-----------------------" <> show e
+      putText "  -- assess --"
+      putText . Txt.intercalate "\n" $ showEntries <$> assess
+      putText ""
+      putText "  -- top --"
+      putText . Txt.intercalate "\n" $ showEntries <$> top
+      putText "-----------------------"
+
+    showEntries :: UtilAnnotationEntry -> Text
+    showEntries e =
+      case e of
+        UeAt a -> "    At: " <> a
+        UeSelectTopNone n -> "    No utils: " <> n
+        UeSelectTopAbove f  -> "    Top above: " <> showF f
+        UeSelectTopOne val n i d -> "    Select top one: " <> n <> ", impulse=" <> show i <> ", score=" <> showF val <> "," <> d
+        UeNote n -> "    Note: " <> n
 
   
 sendLog :: Host.Connection -> Text -> IO ()
@@ -317,7 +353,7 @@ drawTilesForPlayer world entityMap =
     -- Entity base layer
     entities = mkLayer entityMap
     -- Darkness
-    darknessOverlay = Map.empty --TODO darknessFovOverlay (world ^. wdPlayer) (world ^. wdPlayer ^. plActor)
+    darknessOverlay = darknessFovOverlay (world ^. wdPlayer) (world ^. wdPlayer ^. plActor)
     -- Darkness hides entity
     baseLayer = Map.union darknessOverlay entities
 
@@ -454,12 +490,12 @@ tryMoveActor world actor (dx, dy) =
       else
         Nothing
 
-  where
-    updateActorFov w a =
-      -- Calculate field of view
-      let fov = calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos) in
-      a & acFov .~ Just fov
-        & acFovHistory %~ Set.union (Set.fromList $ flatFov (Just fov))
+updateActorFov :: World -> Actor -> Actor
+updateActorFov w a =
+  -- Calculate field of view
+  let fov = calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos) in
+  a & acFov .~ Just fov
+    & acFovHistory %~ Set.union (Set.fromList $ flatFov (Just fov))
 
 
 
@@ -757,13 +793,16 @@ playerMoving pendingCost pendingWorld oldWorld =
       let mv aOrig wOrig =
             let
               inFov = findPathToAllInFov wOrig aOrig 
-              (utilities, wNext) = UB.assessUtilities inFov wOrig aOrig 
+              ((utilities, wNext), annAssess) = runWriter $ UB.assessUtilities inFov wOrig aOrig 
+              (topUtil, annTop) = runWriter $ UB.selectTopUtility utilities
+              annotation = (aOrig ^. acEntity ^. enType, DLst.toList annAssess, DLst.toList annTop)
+              addAnn w' = w' & wdUtilBrainAnnotations %~ (annotation :)
             in
 
-            case UB.selectTopUtility utilities of
+            case topUtil of
               Nothing ->
                 -- No utility = no move, skip
-                updateActorById wNext (aOrig ^. acId) (\a -> a & acSkipMove .~ True)
+                updateActorById (addAnn wNext) (aOrig ^. acId) (\a -> a & acSkipMove .~ True)
 
               Just (_, actorIfMoved, action, _, _) ->
                 let cost = floor . fromIntegral $ aOrig ^. acMoveEnergyCost in
@@ -774,10 +813,7 @@ playerMoving pendingCost pendingWorld oldWorld =
                   -- the next actor move (i.e. avoid looping)
                   wNext & wdActors %~ Map.insert (aOrig ^. acId) (aOrig & acSkipMove .~ True)
                 else
-                  -- Move
-                  let aNext = Map.findWithDefault aOrig (aOrig ^. acId) (wNext ^. wdActors) in
-                    -- actOnImpulse :: Int -> World -> Actor -> Actor -> Impulse -> (Actor -> Actor) -> World
-                  actOnImpulse cost wNext aNext actorIfMoved action
+                  actOnImpulse cost (addAnn wNext) actorIfMoved action
       in
 
       let actorsThatCanMove = filter
@@ -815,8 +851,8 @@ playerMoving pendingCost pendingWorld oldWorld =
       updateAllActors w (\_ a -> a & acSkipMove .~ False)
 
   
-actOnImpulse :: Int -> World -> Actor -> Actor -> Impulse -> World
-actOnImpulse cost w _actorIfFailed actorIfMoved impulse =
+actOnImpulse :: Int -> World -> Actor -> Impulse -> World
+actOnImpulse cost w actorIfMoved impulse =
   let (dx, dy, nextStdGen) =
         let initialStdGen = (actorIfMoved ^. acStdGen) in
 
@@ -845,8 +881,8 @@ actOnImpulse cost w _actorIfFailed actorIfMoved impulse =
         w & wdActors %~ Map.adjust (\a' -> a' & acStdGen .~ nextStdGen) (actorIfMoved ^. acId)
 
       Just w' ->
-        w' & wdActors %~ Map.adjust (\a' -> a' & acEnergy %~ B.update (subtract cost)
-                                               & acStdGen .~ nextStdGen
+        w' & wdActors %~ Map.adjust (\a' -> updateActorFov w' $ a' & acEnergy %~ B.update (subtract cost)
+                                                                   & acStdGen .~ nextStdGen
                                     )
                                     (actorIfMoved ^. acId)
   else

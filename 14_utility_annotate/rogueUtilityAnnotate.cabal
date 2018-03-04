@@ -42,6 +42,9 @@ library
                      , websockets
                      , ilist
                      , random
+                     , dlist
+                     , mtl
+                     , transformers
   default-language:    Haskell2010
 
 executable rogueUtilityAnnotate-exe

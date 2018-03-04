@@ -14,12 +14,18 @@ module UtilityBrain ( selectTopUtility
 
 import Protolude 
 import qualified Data.List as Lst
+import qualified Data.DList as DLst
 import qualified System.Random as Rnd
 import qualified Control.Arrow as Ar
 import           Control.Lens
+import           Control.Monad.Writer.Strict (tell, MonadWriter)
 
 import           GameCore
 import qualified EntityType as E
+
+
+telld :: MonadWriter (DLst.DList a) m => a -> m ()
+telld t = tell (DLst.singleton t)
 
 path :: PathTo -> Path
 path (PathToEntity p _ _) = p
@@ -27,12 +33,18 @@ path (PathToActor p _ _) = p
 path (PathToPlayer p _ _) = p
 
 selectTopUtility :: [(Float, Actor, Impulse, Text, Maybe PathTo)]
-                 -> Maybe (Float, Actor, Impulse, Text, Maybe PathTo)
-selectTopUtility rs = 
-  case rs of
-      [] -> Nothing
+                 -> UtilAnnotator (Maybe (Float, Actor, Impulse, Text, Maybe PathTo))
+selectTopUtility rs = do
+  telld $ UeAt "select top"
 
-      (u@(v0,a0,_,_,_):_) -> do
+  case rs of
+      [] -> do
+        telld $ UeSelectTopNone "No utilities"
+        pure Nothing
+
+      (u@(v0,a0,i0,n0,_):_) -> do
+        telld $ UeSelectTopAbove (v0 - 0.001)
+
         -- Get the results with the top scores (fuzzy match)
         let top = Lst.takeWhile (\(v2,_,_,_,_) -> v2 >= v0 - 0.001) rs 
 
@@ -42,34 +54,34 @@ selectTopUtility rs =
               (Rnd.randomR (0, length top - 1) rndA, rndB') 
 
         case atMay top idx of
-          Just (s, a, i, n, p) -> Just (s, a & acStdGen .~ rndB, i, n, p)
+          Just (s, a, i, n, p) -> do
+            telld $ UeSelectTopOne s n i "selected"
+            pure $ Just (s, a & acStdGen .~ rndB, i, n, p)
 
-          Nothing -> Just u
+          Nothing -> do
+            telld $ UeSelectTopOne v0 n0 i0 $ "Nothing at index, using zero: " <> show idx
+            pure $ Just u
 
   
 -- | See the docs on acUtilities
 -- | Mainly that the world is threaded through utilities and any updates are kept even if no/other utilities are selected
 -- | The actor in the results are speculative and only the actor for the selected utility gets used
-assessUtilities :: [PathTo] -> World -> Actor -> ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
-assessUtilities paths world actor =
-  let
-    (rs, wNext) = foldl' assess ([], world) (actor ^. acUtilities)
-    ranked = rankUtility rs
-  in
-  (ranked, wNext)
+assessUtilities :: [PathTo] -> World -> Actor -> UtilAnnotator ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
+assessUtilities paths world actor = do
+  (rs, wNext) <- foldM assess ([], world) (actor ^. acUtilities)
+  ranked <- rankUtility rs
+  pure (ranked, wNext)
   
   where
-    assess (hist, w) u =
-      let
-        a = fromMaybe actor $ w ^. wdActors ^.at (actor ^. acId) 
-        (rs, wNext) = u w a paths
-      in
-      (hist <> rs, wNext)
+    assess (hist, w) u = do
+      let a = fromMaybe actor $ w ^. wdActors ^.at (actor ^. acId) 
+      (rs, wNext) <- u w a paths
+      pure (hist <> rs, wNext)
 
 
-rankUtility :: [(Float, Actor, Impulse, Text, Maybe PathTo)] -> [(Float, Actor, Impulse, Text, Maybe PathTo)]
+rankUtility :: [(Float, Actor, Impulse, Text, Maybe PathTo)] -> UtilAnnotator [(Float, Actor, Impulse, Text, Maybe PathTo)]
 rankUtility us = 
-  Lst.reverse $ Lst.sortOn (\(x, _, _, _, _) -> x) us
+  pure . Lst.reverse $ Lst.sortOn (\(x, _, _, _, _) -> x) us
 
 
 clamp :: Float -> Float
@@ -114,35 +126,42 @@ distanceToRange pt fov =
         Just $ distance / maxDist
       
 
-utilityOfWander :: World -> Actor -> [PathTo] -> ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
-utilityOfWander world actor _paths = 
-  let rule = clamp $ 0.02 * (10 * clamp (actor ^. acDisposition ^. dsWanderlust)) in
-  ([(rule, actor, ImpMoveRandom, "wander", Nothing)], world)
+utilityOfWander :: World -> Actor -> [PathTo] -> UtilAnnotator ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
+utilityOfWander world actor _paths = do
+  telld $ UeAt "Wander"
+
+  let rule = clamp $ 0.02 * (10 * clamp (actor ^. acDisposition ^. dsWanderlust)) 
+  pure ([(rule, actor, ImpMoveRandom, "wander", Nothing)], world)
 
 
-utilityOfWanderToExit :: World -> Actor -> [PathTo] -> ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
-utilityOfWanderToExit world actor allPaths =
-  let
-    rule x = clamp $ 1 - (0.04 * x + (1.24 - clamp (actor ^. acDisposition ^. dsWanderlustToExits))) 
-    clampedResults = moveTowardsUtil rule allPaths actor
-  in
-  ((\(p, score) -> (score, actor, ImpMoveTowards (path p), "wander to exit", Just p)) <$> clampedResults, world)
+utilityOfWanderToExit :: World -> Actor -> [PathTo] -> UtilAnnotator ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
+utilityOfWanderToExit world actor allPaths = do
+  telld $ UeAt "WanderToExit"
+
+  let rule x = clamp $ 1 - (0.04 * x + (1.24 - clamp (actor ^. acDisposition ^. dsWanderlustToExits))) 
+  let clampedResults = moveTowardsUtil [E.Door] rule allPaths actor
+  pure ((\(p, score) -> (score, actor, ImpMoveTowards (path p), "wander to exit", Just p)) <$> clampedResults, world)
 
   
-utilityOfInfatuation :: World -> Actor -> [PathTo] -> ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
-utilityOfInfatuation world actor allPaths =
-  let
-    rule x = clamp $ -x ** 4 + clamp (actor ^. acDisposition ^. dsSmitten) 
-    clampedResults = moveTowardsUtil rule allPaths actor
-  in
-  ((\(p, score) -> (score, actor, ImpMoveTowards (path p), "infatuation", Just p)) <$> clampedResults, world)
+utilityOfInfatuation :: World -> Actor -> [PathTo] -> UtilAnnotator ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
+utilityOfInfatuation world actor allPaths = do
+  telld . UeAt $ "Infatuation: " <> show (length allPaths) -- debugShowPathTos allPaths --show (actor ^. acDisposition ^. dsSmitten)
+
+  let rule x = clamp $ -x ** 4 + clamp (actor ^. acDisposition ^. dsSmitten) 
+  let clampedResults = moveTowardsUtil (actor ^. acDisposition ^. dsSmittenWith) rule allPaths actor
+
+  let (r, _) = ((\(p, score) -> (score, actor, ImpMoveTowards (path p), "infatuation", Just p)) <$> clampedResults, world)
+  let r2 = (\(f, _, _, _, _) -> showF f) <$> r
+  telld . UeNote $ "infatuation: " <> show r2
+  
+  pure ((\(p, score) -> (score, actor, ImpMoveTowards (path p), "infatuation", Just p)) <$> clampedResults, world)
 
 
-moveTowardsUtil :: (Float -> Float) -> [PathTo] -> Actor -> [(PathTo, Float)]
-moveTowardsUtil rule paths actor =
+moveTowardsUtil :: [E.EntityType] -> (Float -> Float) -> [PathTo] -> Actor -> [(PathTo, Float)]
+moveTowardsUtil es rule paths actor =
   let
     -- Find exits
-    goalPaths = onlyEntitiesOfType [E.Door] paths
+    goalPaths = onlyEntitiesOfType es paths
 
       -- Normalise distances
     pathsNormalisedMay = (\p -> (p, distanceToRange p (actor ^. acFovDistance))) <$> goalPaths 
@@ -161,5 +180,3 @@ catNormalisedMay ps =
   where
     go (_, Nothing) = Nothing
     go (p, Just v) = Just (p, v) 
-
-
