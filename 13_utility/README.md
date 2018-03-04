@@ -1,4 +1,4 @@
-# Sticky light
+# Utility
 
  - html
  - js
