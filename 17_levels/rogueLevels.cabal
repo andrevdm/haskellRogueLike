@@ -25,6 +25,7 @@ library
                      , BoundedInt
                      , UtilityBrain
                      , Memory
+                     , Levels.Level01
   build-depends:       base >= 4.7 && < 5
                      , protolude
                      , aeson

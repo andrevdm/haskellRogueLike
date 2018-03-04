@@ -1,1 +1,229 @@
-Common subdirectories: ../16_debug/src/Data and ./src/Data
+diff -w -B -a -d -u -b -r --new-file ../16_debug/src/GameCore.hs ./src/GameCore.hs
+--- ../16_debug/src/GameCore.hs	2018-03-04 10:57:56.802067493 +0200
++++ ./src/GameCore.hs	2018-03-04 12:26:18.971517436 +0200
+@@ -74,6 +74,7 @@
+                    , _wdMinMoveEnergy :: !Int   -- ^ min energy required before any more, regardless of cost, can be attampted
+                    , _wdEnergyIncrements :: !Int -- ^ amount of energy that is added per game loop
+                    , _wdUtilBrainAnnotations :: ![(E.EntityType, [UtilAnnotationEntry], [UtilAnnotationEntry])]
++                   , _wdGetLevel :: !(Levels -> Level)
+                    }
+ 
+ data Config = Config { _cfgKeys :: !(Map Text Text)
+@@ -92,6 +93,12 @@
+                      , _enAttribs :: !(Map Text Int)
+                      } deriving (Show, Eq, Ord)
+ 
++data Level = Level { _lvlName :: !Text
++                   , _lvlBoot :: !(World -> World)
++                   }
++
++data Levels = Levels01
++
+ newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
+ newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
+ 
+@@ -204,3 +211,4 @@
+ makeLenses ''Tile
+ makeLenses ''Actor
+ makeLenses ''Disposition
++makeLenses ''Level
+diff -w -B -a -d -u -b -r --new-file ../16_debug/src/GameEngine.hs ./src/GameEngine.hs
+--- ../16_debug/src/GameEngine.hs	2018-03-04 11:25:09.679477906 +0200
++++ ./src/GameEngine.hs	2018-03-04 12:28:47.362672169 +0200
+@@ -34,12 +34,12 @@
+ import qualified UtilityBrain as UB
+ 
+ 
+-runGame :: IO ()
+-runGame = Host.runHost manageConnection
++runGame :: (Levels -> Level) -> IO ()
++runGame getLevel = Host.runHost (manageConnection getLevel)
+ 
+       
+-manageConnection :: Host.Connection -> IO ()
+-manageConnection conn = do
++manageConnection :: (Levels -> Level) -> Host.Connection -> IO ()
++manageConnection getLevel conn = do
+   initCmd <- conn ^. conReceiveText 
+ 
+   case parseCommand initCmd of
+@@ -47,7 +47,7 @@
+       mapData <- Txt.readFile "worlds/simple.csv"
+       std <- Rnd.getStdGen
+       
+-      case initialiseConnection conn cmdData mapData std of
++      case initialiseConnection conn cmdData mapData std getLevel of
+         Right world -> do
+           worldV <- atomically $ newTVar world
+           sendConfig conn $ world ^. wdConfig
+@@ -74,47 +74,35 @@
+         _ -> Nothing
+       
+ 
+-initialiseConnection :: Host.Connection -> [Text] -> Text -> Rnd.StdGen -> Either Text World
+-initialiseConnection conn cmdData mapData std = 
++initialiseConnection :: Host.Connection -> [Text] -> Text -> Rnd.StdGen -> (Levels -> Level) -> Either Text World
++initialiseConnection conn cmdData mapData std getLevel = 
+   case parseScreenSize cmdData of
+     Nothing ->
+       Left "missing / invalid screen size"
+ 
+     Just (width, height) ->
+-      Right $ bootWorld conn (width, height) mapData std
++      Right $ bootWorld conn (width, height) mapData std getLevel
+ 
+ 
+-bootWorld :: Host.Connection -> (Int, Int) -> Text -> Rnd.StdGen -> World
+-bootWorld conn screenSize mapData std = 
++bootWorld :: Host.Connection -> (Int, Int) -> Text -> Rnd.StdGen -> (Levels -> Level) -> World
++bootWorld conn screenSize mapData std getLevel = 
+   let
+     config = mkConfig
+-    bug = mkEnemyActor "bug1" E.Bug (6, -2) & acUtilities .~ [UB.utilityOfInfatuation, UB.utilityOfWander, UB.utilityOfWanderToExit]
+-                                            & acDisposition .~ Disposition { _dsSmitten = 0.8
+-                                                                           , _dsWanderlust = 0.35
+-                                                                           , _dsWanderlustToExits = 0.4
+-                                                                           , _dsSmittenWith = [E.Player]
+-                                                                           }
+-          
+-    snake = mkEnemyActor "snake1" E.Snake (8, -4) & acUtilities .~ [UB.utilityOfWander, UB.utilityOfWanderToExit]
+-                                                  & acDisposition .~ Disposition { _dsSmitten = 0
+-                                                                                 , _dsWanderlust = 0.35
+-                                                                                 , _dsWanderlustToExits = 0.4
+-                                                                                 , _dsSmittenWith = []
+-                                                                                 }
+ 
+     w1 = World { _wdPlayer = mkPlayer
+                , _wdConfig = config
+                , _wdMap = loadWorld E.loadTexts mapData
+-               , _wdActors = Map.fromList [ (bug ^. acId, bug)
+-                                          , (snake ^. acId, snake)
+-                                          ]
++               , _wdActors = Map.fromList []
+                , _wdMinMoveEnergy = 100
+                , _wdEnergyIncrements = 20
+                , _wdUtilBrainAnnotations = []
++               , _wdGetLevel = getLevel
+                }
++
++    w2 = getLevel Levels01 ^. lvlBoot $ w1
+   in
+   -- Calculate the actors fov
+-  updateAllActors w1 updateActorFov
++  updateAllActors w2 updateActorFov
+ 
+   where
+     mkConfig =
+@@ -172,24 +160,6 @@
+             , _acPosMemory = M.empty
+             , _acProps = Map.empty
+             }
+-
+-    mkEnemyActor aid e (x, y) =
+-      Actor { _acId = Aid aid
+-            , _acClass = ClassEnemy
+-            , _acEntity = E.getEntity e
+-            , _acWorldPos = WorldPos (x, y)
+-            , _acStdGen = std
+-            , _acFovDistance = 2
+-            , _acFov = Nothing
+-            , _acFovHistory = Set.empty
+-            , _acSkipMove = False
+-            , _acMoveEnergyCost = 150
+-            , _acEnergy = B.new 180 100
+-            , _acUtilities = []
+-            , _acDisposition = UB.emptyDisposition 
+-            , _acPosMemory = M.empty
+-            , _acProps = Map.empty
+-            }
+     
+ 
+ runCmd :: Host.Connection -> TVar World -> Text -> [Text] -> IO ()
+diff -w -B -a -d -u -b -r --new-file ../16_debug/src/Levels/Level01.hs ./src/Levels/Level01.hs
+--- ../16_debug/src/Levels/Level01.hs	1970-01-01 02:00:00.000000000 +0200
++++ ./src/Levels/Level01.hs	2018-03-04 12:16:58.960309765 +0200
+@@ -0,0 +1,59 @@
++{-# LANGUAGE NoImplicitPrelude #-}
++{-# LANGUAGE OverloadedStrings #-}
++
++module Levels.Level01 where
++
++import Protolude hiding (Map)
++import qualified Data.Set as Set
++import qualified Data.Map.Strict as Map
++import qualified System.Random as Rnd
++import           Control.Lens ((^.), (.~))
++
++import qualified Memory as M
++import           GameCore
++import qualified Entities as E
++import qualified EntityType as E
++import qualified BoundedInt as B
++import qualified UtilityBrain as UB
++
++bootLevel :: World -> World
++bootLevel w1 =
++  let
++    bug = mkEnemyActor "bug1" E.Bug (6, -2) & acUtilities .~ [UB.utilityOfInfatuation, UB.utilityOfWander, UB.utilityOfWanderToExit]
++                                            & acDisposition .~ Disposition { _dsSmitten = 0.8
++                                                                           , _dsWanderlust = 0.35
++                                                                           , _dsWanderlustToExits = 0.4
++                                                                           , _dsSmittenWith = [E.Player]
++                                                                           }
++          
++    snake = mkEnemyActor "snake1" E.Snake (8, -4) & acUtilities .~ [UB.utilityOfWander, UB.utilityOfWanderToExit]
++                                                  & acDisposition .~ Disposition { _dsSmitten = 0
++                                                                                 , _dsWanderlust = 0.35
++                                                                                 , _dsWanderlustToExits = 0.4
++                                                                                 , _dsSmittenWith = []
++                                                                                 }
++
++    w2 = w1 & wdActors .~ Map.fromList [ (bug ^. acId, bug)
++                                       , (snake ^. acId, snake)
++                                       ]
++  in
++  w2
++
++  where
++    mkEnemyActor aid e (x, y) =
++      Actor { _acId = Aid aid
++            , _acClass = ClassEnemy
++            , _acEntity = E.getEntity e
++            , _acWorldPos = WorldPos (x, y)
++            , _acStdGen = snd $ Rnd.split (w1 ^. wdPlayer ^. plActor ^. acStdGen)
++            , _acFovDistance = 2
++            , _acFov = Nothing
++            , _acFovHistory = Set.empty
++            , _acSkipMove = False
++            , _acMoveEnergyCost = 150
++            , _acEnergy = B.new 180 100
++            , _acUtilities = []
++            , _acDisposition = UB.emptyDisposition 
++            , _acPosMemory = M.empty
++            , _acProps = Map.empty
++            }
+diff -w -B -a -d -u -b -r --new-file ../16_debug/app/Main.hs ./app/Main.hs
+--- ../16_debug/app/Main.hs	2018-03-04 10:50:00.682203134 +0200
++++ ./app/Main.hs	2018-03-04 12:27:39.395045414 +0200
+@@ -1,12 +1,20 @@
+ {-# LANGUAGE NoImplicitPrelude #-}
++{-# LANGUAGE OverloadedStrings #-}
+ 
+ module Main where
+ 
+ import           Protolude 
+   
++import qualified GameCore as GC
+ import qualified GameEngine as GE
++import qualified Levels.Level01 as L01
+ 
+ main :: IO ()
+-main = GE.runGame
++main = GE.runGame getLevel
++
++getLevel :: GC.Levels -> GC.Level
++getLevel GC.Levels01 = GC.Level { GC._lvlName = "L01"
++                                , GC._lvlBoot = L01.bootLevel 
++                                }
+ 
+ 

@@ -74,6 +74,7 @@ data World = World { _wdPlayer :: !Player
                    , _wdMinMoveEnergy :: !Int   -- ^ min energy required before any more, regardless of cost, can be attampted
                    , _wdEnergyIncrements :: !Int -- ^ amount of energy that is added per game loop
                    , _wdUtilBrainAnnotations :: ![(E.EntityType, [UtilAnnotationEntry], [UtilAnnotationEntry])]
+                   , _wdGetLevel :: !(Levels -> Level)
                    }
 
 data Config = Config { _cfgKeys :: !(Map Text Text)
@@ -91,6 +92,12 @@ data Entity = Entity { _enType :: !E.EntityType
                      , _enProps :: !(Map Text Text)
                      , _enAttribs :: !(Map Text Int)
                      } deriving (Show, Eq, Ord)
+
+data Level = Level { _lvlName :: !Text
+                   , _lvlBoot :: !(World -> World)
+                   }
+
+data Levels = Levels01
 
 newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
 newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
@@ -204,3 +211,4 @@ makeLenses ''Entity
 makeLenses ''Tile
 makeLenses ''Actor
 makeLenses ''Disposition
+makeLenses ''Level

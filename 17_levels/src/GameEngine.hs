@@ -34,12 +34,12 @@ import qualified BoundedInt as B
 import qualified UtilityBrain as UB
 
 
-runGame :: IO ()
-runGame = Host.runHost manageConnection
+runGame :: (Levels -> Level) -> IO ()
+runGame getLevel = Host.runHost (manageConnection getLevel)
 
       
-manageConnection :: Host.Connection -> IO ()
-manageConnection conn = do
+manageConnection :: (Levels -> Level) -> Host.Connection -> IO ()
+manageConnection getLevel conn = do
   initCmd <- conn ^. conReceiveText 
 
   case parseCommand initCmd of
@@ -47,7 +47,7 @@ manageConnection conn = do
       mapData <- Txt.readFile "worlds/simple.csv"
       std <- Rnd.getStdGen
       
-      case initialiseConnection conn cmdData mapData std of
+      case initialiseConnection conn cmdData mapData std getLevel of
         Right world -> do
           worldV <- atomically $ newTVar world
           sendConfig conn $ world ^. wdConfig
@@ -74,47 +74,35 @@ manageConnection conn = do
         _ -> Nothing
       
 
-initialiseConnection :: Host.Connection -> [Text] -> Text -> Rnd.StdGen -> Either Text World
-initialiseConnection conn cmdData mapData std = 
+initialiseConnection :: Host.Connection -> [Text] -> Text -> Rnd.StdGen -> (Levels -> Level) -> Either Text World
+initialiseConnection conn cmdData mapData std getLevel = 
   case parseScreenSize cmdData of
     Nothing ->
       Left "missing / invalid screen size"
 
     Just (width, height) ->
-      Right $ bootWorld conn (width, height) mapData std
+      Right $ bootWorld conn (width, height) mapData std getLevel
 
 
-bootWorld :: Host.Connection -> (Int, Int) -> Text -> Rnd.StdGen -> World
-bootWorld conn screenSize mapData std = 
+bootWorld :: Host.Connection -> (Int, Int) -> Text -> Rnd.StdGen -> (Levels -> Level) -> World
+bootWorld conn screenSize mapData std getLevel = 
   let
     config = mkConfig
-    bug = mkEnemyActor "bug1" E.Bug (6, -2) & acUtilities .~ [UB.utilityOfInfatuation, UB.utilityOfWander, UB.utilityOfWanderToExit]
-                                            & acDisposition .~ Disposition { _dsSmitten = 0.8
-                                                                           , _dsWanderlust = 0.35
-                                                                           , _dsWanderlustToExits = 0.4
-                                                                           , _dsSmittenWith = [E.Player]
-                                                                           }
-          
-    snake = mkEnemyActor "snake1" E.Snake (8, -4) & acUtilities .~ [UB.utilityOfWander, UB.utilityOfWanderToExit]
-                                                  & acDisposition .~ Disposition { _dsSmitten = 0
-                                                                                 , _dsWanderlust = 0.35
-                                                                                 , _dsWanderlustToExits = 0.4
-                                                                                 , _dsSmittenWith = []
-                                                                                 }
 
     w1 = World { _wdPlayer = mkPlayer
                , _wdConfig = config
                , _wdMap = loadWorld E.loadTexts mapData
-               , _wdActors = Map.fromList [ (bug ^. acId, bug)
-                                          , (snake ^. acId, snake)
-                                          ]
+               , _wdActors = Map.fromList []
                , _wdMinMoveEnergy = 100
                , _wdEnergyIncrements = 20
                , _wdUtilBrainAnnotations = []
+               , _wdGetLevel = getLevel
                }
+
+    w2 = getLevel Levels01 ^. lvlBoot $ w1
   in
   -- Calculate the actors fov
-  updateAllActors w1 updateActorFov
+  updateAllActors w2 updateActorFov
 
   where
     mkConfig =
@@ -169,24 +157,6 @@ bootWorld conn screenSize mapData std =
             , _acEnergy = B.new 200 100
             , _acUtilities = []
             , _acDisposition = UB.emptyDisposition
-            , _acPosMemory = M.empty
-            , _acProps = Map.empty
-            }
-
-    mkEnemyActor aid e (x, y) =
-      Actor { _acId = Aid aid
-            , _acClass = ClassEnemy
-            , _acEntity = E.getEntity e
-            , _acWorldPos = WorldPos (x, y)
-            , _acStdGen = std
-            , _acFovDistance = 2
-            , _acFov = Nothing
-            , _acFovHistory = Set.empty
-            , _acSkipMove = False
-            , _acMoveEnergyCost = 150
-            , _acEnergy = B.new 180 100
-            , _acUtilities = []
-            , _acDisposition = UB.emptyDisposition 
             , _acPosMemory = M.empty
             , _acProps = Map.empty
             }
