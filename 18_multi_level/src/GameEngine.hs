@@ -430,6 +430,14 @@ runAction world action =
     ActTogglePlayerProp prop valEnabled ->
       world & (wdPlayer . plActor . acProps) %~ Map.alter (toggleMapProp valEnabled) prop
 
+    ActMoveActor actor worldPos ->
+      let
+        movedActor = actor & acWorldPos .~ worldPos
+        w2 = updatePlayerViewport $ updateActor world movedActor
+        pa = w2 ^. wdPlayer ^. plActor
+      in
+        updateActor w2 (updateActorFov w2 pa)
+
   where
     toggleMapProp v Nothing = Just v
     toggleMapProp _ (Just _) = Nothing
@@ -465,15 +473,8 @@ tryMoveActor world actor (dx, dy) =
                   _ -> False
       in
       if canMove
-      then
-        let
-          movedActor = actor & acWorldPos .~ tryWorldTo'
-          w2 = updatePlayerViewport $ updateActor world movedActor
-          pa = w2 ^. wdPlayer ^. plActor
-        in
-          Just $ updateActor w2 (updateActorFov w2 pa)
-      else
-        Nothing
+      then Just . runAction world $ ActMoveActor actor tryWorldTo'
+      else Nothing
 
 updateActorFov :: World -> Actor -> Actor
 updateActorFov w a =

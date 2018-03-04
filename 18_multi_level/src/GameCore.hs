@@ -105,6 +105,7 @@ newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
 newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
 
 data RogueAction = ActMovePlayer (Int, Int)
+                 | ActMoveActor Actor WorldPos
                  | ActSetPlayerViewPortStyle ViewPortStyle
                  | ActTogglePlayerProp Text Text
 
