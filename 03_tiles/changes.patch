@@ -76,8 +76,8 @@ diff -w -B -a -d -u -b --new-file ../01_web_ui/src/EntityType.hs ./src/EntityTyp
 +                | Unknown
 +                deriving (Show, Eq, Ord)
 diff -w -B -a -d -u -b --new-file ../01_web_ui/src/GameCore.hs ./src/GameCore.hs
---- ../01_web_ui/src/GameCore.hs	2018-02-18 15:37:50.223522344 +0200
-+++ ./src/GameCore.hs	2018-02-18 15:37:39.082266617 +0200
+--- ../01_web_ui/src/GameCore.hs	2018-03-04 08:26:49.759170743 +0200
++++ ./src/GameCore.hs	2018-03-04 08:26:38.591339506 +0200
 @@ -14,7 +14,7 @@
  import           Control.Lens.TH (makeLenses)
  
@@ -87,7 +87,7 @@ diff -w -B -a -d -u -b --new-file ../01_web_ui/src/GameCore.hs ./src/GameCore.hs
  
  data Player = Player { _plConn :: !Host.Connection
                       , _plScreenSize :: !(Int, Int)
-@@ -27,31 +27,52 @@
+@@ -27,28 +27,45 @@
  newtype Config = Config { _cfgKeys :: Map Text Text
                          }
  
@@ -95,23 +95,16 @@ diff -w -B -a -d -u -b --new-file ../01_web_ui/src/GameCore.hs ./src/GameCore.hs
 +                 , _tlPic :: !(Int, Int)
 +                 , _tlId :: !Int
 +                 } deriving (Show, Eq, Ord)
-+
+ 
 +data Entity = Entity { _enType :: !E.EntityType
 +                     , _enTile :: !Tile
 +                     , _enProps :: !(Map Text Text)
 +                     , _enAttribs :: !(Map Text Int)
 +                     } deriving (Show, Eq, Ord)
-+
-+
- makeLenses ''World
- makeLenses ''Config
- makeLenses ''Player
-+makeLenses ''Entity
-+makeLenses ''Tile
- 
  
 -data UiMessage = UiMessage { umCmd :: Text
 -                           , umMessage :: Text
++
 +data UiMessage = UiMessage { umCmd :: !Text
 +                           , umMessage :: !Text
                             }
@@ -147,7 +140,7 @@ diff -w -B -a -d -u -b --new-file ../01_web_ui/src/GameCore.hs ./src/GameCore.hs
  instance Ae.ToJSON UiMessage where
    toJSON = Ae.genericToJSON Ae.defaultOptions { Ae.fieldLabelModifier = renField 2 True }
  
-@@ -64,6 +85,9 @@
+@@ -61,6 +78,9 @@
  instance Ae.ToJSON UiKey where
    toJSON = Ae.genericToJSON Ae.defaultOptions { Ae.fieldLabelModifier = renField 2 True }
  
@@ -157,6 +150,14 @@ diff -w -B -a -d -u -b --new-file ../01_web_ui/src/GameCore.hs ./src/GameCore.hs
  
  -- | drop prefix, and then lower case
  -- | renField 3 "tskBla" == "bla"
+@@ -74,3 +94,5 @@
+ makeLenses ''World
+ makeLenses ''Config
+ makeLenses ''Player
+\ No newline at end of file
++makeLenses ''Entity
++makeLenses ''Tile
+\ No newline at end of file
 diff -w -B -a -d -u -b --new-file ../01_web_ui/src/GameEngine.hs ./src/GameEngine.hs
 --- ../01_web_ui/src/GameEngine.hs	2018-02-18 10:10:42.961437918 +0200
 +++ ./src/GameEngine.hs	2018-02-18 10:10:17.309202811 +0200

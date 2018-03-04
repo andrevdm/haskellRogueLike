@@ -27,9 +27,6 @@ data World = World { _wdPlayer :: !Player
 newtype Config = Config { _cfgKeys :: Map Text Text
                         }
 
-makeLenses ''World
-makeLenses ''Config
-makeLenses ''Player
 
 
 data UiMessage = UiMessage { umCmd :: Text
@@ -72,3 +69,8 @@ renField drp toLower =
   Txt.unpack . (if toLower then mkLower else identity) . Txt.drop drp . Txt.pack
   where
     mkLower t = Txt.toLower (Txt.take 1 t) <> Txt.drop 1 t
+
+
+makeLenses ''World
+makeLenses ''Config
+makeLenses ''Player

@@ -61,14 +61,6 @@ newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
 newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
 
 
-makeLenses ''World
-makeLenses ''Config
-makeLenses ''Player
-makeLenses ''Entity
-makeLenses ''Tile
-makeLenses ''Actor
-
-
 data UiMessage = UiMessage { umCmd :: !Text
                            , umMessage :: !Text
                            }
@@ -120,3 +112,11 @@ renField drp toLower =
   Txt.unpack . (if toLower then mkLower else identity) . Txt.drop drp . Txt.pack
   where
     mkLower t = Txt.toLower (Txt.take 1 t) <> Txt.drop 1 t
+
+
+makeLenses ''World
+makeLenses ''Config
+makeLenses ''Player
+makeLenses ''Entity
+makeLenses ''Tile
+makeLenses ''Actor

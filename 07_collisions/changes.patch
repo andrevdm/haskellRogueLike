@@ -1,7 +1,7 @@
 Common subdirectories: ../06_moving/src/Data and ./src/Data
 diff -w -B -a -d -u -b --new-file ../06_moving/src/GameCore.hs ./src/GameCore.hs
---- ../06_moving/src/GameCore.hs	2018-02-19 07:56:12.674549399 +0200
-+++ ./src/GameCore.hs	2018-02-21 07:58:16.686370994 +0200
+--- ../06_moving/src/GameCore.hs	2018-03-04 08:26:06.087835873 +0200
++++ ./src/GameCore.hs	2018-03-04 08:25:52.312048664 +0200
 @@ -42,7 +42,8 @@
                     , _wdActors :: !(Map Aid Actor)
                     }
