@@ -431,6 +431,12 @@ runAction world action =
     ActTogglePlayerProp prop valEnabled ->
       world & (wdPlayer . plActor . acProps) %~ Map.alter (toggleMapProp valEnabled) prop
 
+    ActSetPlayerProp prop valEnabled ->
+      world & (wdPlayer . plActor . acProps) %~ Map.insert prop valEnabled
+
+    ActClearPlayerProp prop ->
+      world & (wdPlayer . plActor . acProps) %~ Map.delete prop
+
     ActMoveActor actor worldPos ->
       let
         movedActor = actor & acWorldPos .~ worldPos
@@ -447,9 +453,26 @@ runAction world action =
         (world ^. wdGetLevel)
         l
 
+    ActSetStoryHandler h ->
+      world & (wdLevel . lvlStoryHandler) .~ h
+
+    ActRemoveEntity existingType atWorldPos ->
+      world & wdMap %~ Map.alter (deleteMapEntity existingType) atWorldPos
+
+    ActReplaceEntity existingType atWorldPos newEntity ->
+      world & wdMap %~ Map.alter (alterMapEntity existingType newEntity) atWorldPos
+
   where
     toggleMapProp v Nothing = Just v
     toggleMapProp _ (Just _) = Nothing
+
+    alterMapEntity :: E.EntityType -> Entity -> Maybe Entity -> Maybe Entity
+    alterMapEntity _ new Nothing = Just new
+    alterMapEntity oldType new (Just oldEntity) = if oldType == (oldEntity ^. enType) then Just new else Just oldEntity
+
+    deleteMapEntity :: E.EntityType -> Maybe Entity -> Maybe Entity
+    deleteMapEntity _ Nothing = Nothing
+    deleteMapEntity oldType (Just oldEntity) = if oldType == (oldEntity ^. enType) then Nothing else Just oldEntity
 
 
 tryMoveActor :: World -> Actor -> (Int, Int) -> Maybe World
@@ -474,8 +497,10 @@ tryMoveActor world actor (dx, dy) =
       destEntityType = _enType <$> destEntity
       -- Actors at destination
       destActors = filter (\a -> a ^. acWorldPos == tryWorldTo') (getAllActors world)
-      -- Get actions
-      actions = (world ^. wdLevel ^. lvlTryMove) destActors destEntityType world tryWorldTo' actor
+      -- Create move event
+      evt = EvtMove destActors destEntityType tryWorldTo' actor
+      -- Run even to get actions
+      actions = (world ^. wdLevel ^. lvlStoryHandler) world evt 
    in
    Just $ runActions world actions 
 
