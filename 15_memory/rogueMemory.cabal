@@ -58,6 +58,30 @@ executable rogueMemory-exe
   default-language:    Haskell2010
 
 
+test-suite rogueMemory-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  build-depends:       base
+                     , rogueMemory
+                     , protolude
+                     , hspec
+                     , QuickCheck
+                     , text
+                     , containers
+                     , bifunctors
+                     , lens
+                     , bytestring
+                     , random
+                     , dlist
+                     , mtl
+                     , transformers
+  other-modules:       GameSpec
+                     , MemorySpec
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude
+  default-language:    Haskell2010
+
+
 source-repository head
   type:     git
   location: https://github.com/andrevdm/rogueLikeDemo

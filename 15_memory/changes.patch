@@ -94,3 +94,236 @@ diff -w -B -a -d -u -b --new-file ../14_utility_annotate/src/Memory.hs ./src/Mem
 +
 +fromList :: (Ord a) => [(Text, [(a, Int)])] -> Memory a
 +fromList vs = Memory . Map.fromList $ Map.fromList <<$>> vs
+diff -w -B -a -d -u -b --new-file ../14_utility_annotate/test/GameSpec.hs ./test/GameSpec.hs
+--- ../14_utility_annotate/test/GameSpec.hs	1970-01-01 02:00:00.000000000 +0200
++++ ./test/GameSpec.hs	2018-03-04 09:05:24.708261209 +0200
+@@ -0,0 +1,108 @@
++{-# LANGUAGE NoImplicitPrelude #-}
++{-# LANGUAGE OverloadedStrings #-}
++
++module GameSpec where
++
++import Protolude 
++import qualified Data.Map.Strict as Map
++import           Test.Hspec
++import           Test.QuickCheck
++
++import           GameCore
++import qualified EntityType as E
++import qualified GameEngine as GE
++
++mkEntityAndTile :: Int -> Text -> (Int, Int) -> (Entity, Tile)
++mkEntityAndTile id name pic =
++  let t = Tile { _tlId = id, _tlName = name, _tlPic = pic } in
++  let a = Entity { _enType = E.Blank, _enTile = t, _enProps = Map.empty, _enAttribs = Map.empty} in
++  (a, t)
++    
++
++tileBlank  :: Tile
++tileWall   :: Tile
++tilePlayer :: Tile
++
++entityBlank  :: Entity
++entityWall   :: Entity
++entityPlayer :: Entity
++
++(entityBlank , tileBlank ) = mkEntityAndTile 1 "blank"  (1, 1) 
++(entityWall  , tileWall  ) = mkEntityAndTile 2 "wall"   (2, 2)
++(entityPlayer, tilePlayer) = mkEntityAndTile 3 "player" (3, 3)
++
++csvSmall :: Text
++csvSmall = " , , ,+, \n\
++           \ , , , , \n\
++           \ ,+, , ,+\n\
++           \ , , , , \n\
++           \ , , ,+, "
++
++spec :: Spec
++spec = do
++  describe "co-ords basics" $ do
++    it "world to player: on (0,0) - 1" $
++      GE.worldCoordToPlayer (WorldPos (0, 0)) (WorldPos (0, 0)) `shouldBe` PlayerPos (0, 0)
++    it "world to player: on (0,0) - 2" $
++      GE.worldCoordToPlayer (WorldPos (0, 0)) (WorldPos (1, 0)) `shouldBe` PlayerPos (1, 0)
++    it "world to player: on (0,0) - 3" $
++      GE.worldCoordToPlayer (WorldPos (0, 0)) (WorldPos (4, 0)) `shouldBe` PlayerPos (4, 0)
++    it "world to player: on (0,0) - 4" $
++      GE.worldCoordToPlayer (WorldPos (0, 0)) (WorldPos (0, 1)) `shouldBe` PlayerPos (0, -1)
++    it "world to player: on (0,0) - 5" $
++      GE.worldCoordToPlayer (WorldPos (0, 0)) (WorldPos (0, 4)) `shouldBe` PlayerPos (0, -4)
++
++    it "world to player: not (0,0) - 1" $
++      GE.worldCoordToPlayer (WorldPos (2, -4)) (WorldPos (2, -4)) `shouldBe` PlayerPos (0, 0)
++    it "world to player: not (0,0) - 2" $
++      GE.worldCoordToPlayer (WorldPos (2, -4)) (WorldPos (6, -7)) `shouldBe` PlayerPos (4, 3)
++
++
++    it "player to world: on (0,0) - 1" $
++      GE.playerCoordToWorld (WorldPos (0, 0)) (PlayerPos (0, 0)) `shouldBe` WorldPos (0, 0)
++    it "player to world: on (0,0) - 2" $
++      GE.playerCoordToWorld (WorldPos (0, 0)) (PlayerPos (1, 0)) `shouldBe` WorldPos (1, 0)
++    it "player to world: on (0,0) - 3" $
++      GE.playerCoordToWorld (WorldPos (0, 0)) (PlayerPos (4, 0)) `shouldBe` WorldPos (4, 0)
++    it "player to world: on (0,0) - 4" $
++      GE.playerCoordToWorld (WorldPos (0, 0)) (PlayerPos (0, -1)) `shouldBe` WorldPos (0, 1)
++    it "player to world: on (0,0) - 5" $
++      GE.playerCoordToWorld (WorldPos (0, 0)) (PlayerPos (0, -4)) `shouldBe` WorldPos (0, 4)
++
++    it "player to world: not (0,0) - 1" $
++      GE.playerCoordToWorld (WorldPos (2, -4)) (PlayerPos (0, 0)) `shouldBe` WorldPos (2, -4)
++    it "player to world: not (0,0) - 2" $
++      GE.playerCoordToWorld (WorldPos (2, -4)) (PlayerPos (4, 3)) `shouldBe` WorldPos (6, -7)
++
++    it "player to world to player" $ property $
++      \x y tx ty -> do
++        let (WorldPos (wx, wy)) = GE.playerCoordToWorld (WorldPos (tx, ty)) (PlayerPos (x, y))
++        let (PlayerPos (px, py)) = GE.worldCoordToPlayer (WorldPos (tx, ty)) (WorldPos (wx, wy))
++        (px, py) `shouldBe` (x, y)
++
++    it "world to player to world" $ property $
++      \x y tx ty -> do
++        let (PlayerPos (px, py)) = GE.worldCoordToPlayer (WorldPos (tx, ty)) (WorldPos (x, y))
++        let (WorldPos (wx, wy)) = GE.playerCoordToWorld (WorldPos (tx, ty)) ( PlayerPos(px, py))
++        (wx, wy) `shouldBe` (x, y)
++
++
++  describe "parse world co-ords" $ do
++    let parsed = GE.parseWorld (Map.fromList [("+", entityWall)]) csvSmall
++
++    it "parsed to player pos" $ do
++      let p = Map.toList parsed
++      p `shouldMatchList` [ (PlayerPos (3, 0), entityWall)
++                          , (PlayerPos (1, 2), entityWall)
++                          , (PlayerPos (4, 2), entityWall)
++                          , (PlayerPos (3, 4), entityWall)
++                          ]
++
++    it "translatePlayerMap to (0, 0)" $ do
++      let wm = GE.translatePlayerMap (WorldPos (0, 0)) parsed
++      let p = Map.toList wm
++      p `shouldMatchList` [ (WorldPos (3,  0), entityWall)
++                          , (WorldPos (1, -2), entityWall)
++                          , (WorldPos (4, -2), entityWall)
++                          , (WorldPos (3, -4), entityWall)
++                          ]
+diff -w -B -a -d -u -b --new-file ../14_utility_annotate/test/MemorySpec.hs ./test/MemorySpec.hs
+--- ../14_utility_annotate/test/MemorySpec.hs	1970-01-01 02:00:00.000000000 +0200
++++ ./test/MemorySpec.hs	2018-03-04 09:07:50.238815190 +0200
+@@ -0,0 +1,110 @@
++{-# OPTIONS_GHC -fno-warn-type-defaults #-}
++{-# LANGUAGE NoImplicitPrelude #-}
++{-# LANGUAGE OverloadedStrings #-}
++
++module MemorySpec where
++
++import Protolude 
++import qualified Data.Map as Map
++import           Test.Hspec
++
++import qualified Memory as M
++
++spec :: Spec
++spec = do
++  describe "simple" $ do
++    it "nothing to recall" $ do
++      let m = M.empty
++      M.remembers "test" 0 m `shouldBe` False
++
++    it "remembers" $ do
++      let m = M.remember (\_ n -> n) "test" 1 (99::Int) M.empty
++      M.remembers "test" 99 m `shouldBe` True
++
++    it "forgets all" $ do
++      let m = M.forgetAll "test" $ M.remember (\_ n -> n) "test" 1 (99::Int) M.empty
++      M.remembers "test" 99 m `shouldBe` False
++
++    it "forgets " $ do
++      let m = M.forget "test" 99 $ M.remember (\_ n -> n) "test" 1 (99::Int) M.empty
++      M.remembers "test" 99 m `shouldBe` False
++
++    it "does not remember, wrong key" $ do
++      let m = M.remember (\_ n -> n) "test" 1 "val99" M.empty
++      M.remembers "!test" "val99" m `shouldBe` False
++
++    it "does not remember, wrong value" $ do
++      let m = M.remember (\_ n -> n) "test" 1 "val99" M.empty
++      M.remembers "test" "val199" m `shouldBe` False
++
++    it "tick removes" $ do
++      let m = M.remember (\_ n -> n) "test" 1 "val99" M.empty
++      M.remembers "test" "val99" (M.tick m) `shouldBe` False
++
++  describe "multi" $ do
++    let orig = [ ("k1", [("k1.a" :: Text, 2), ("k1.b", 3)])
++               , ("k2", [("k2.a", 3)])
++               ]
++
++    let m = M.fromList orig
++
++    it "toList" $ 
++      M.toList m `shouldBe` orig
++    
++    it "remembers" $ do
++      M.remembers "k1" "k1.a" m `shouldBe` True
++      M.remembers "k1" "k1.b" m `shouldBe` True
++      M.remembers "k2" "k2.a" m `shouldBe` True
++
++      M.remembers "k2" "k1.a" m `shouldBe` False
++      M.remembers "k2" "k1.b" m `shouldBe` False
++      M.remembers "k1" "k2.a" m `shouldBe` False
++
++    it "recall" $ do
++      M.recall "k1" m `shouldBe` Map.fromList [("k1.a", 2), ("k1.b", 3)]
++      M.recall "k2" m `shouldBe` Map.fromList [("k2.a", 3)]
++      M.recall "k3" m `shouldBe` Map.empty
++
++    it "tick" $ do
++      let m1 = M.tick m
++      M.recall "k1" m1 `shouldBe` Map.fromList [("k1.a", 1), ("k1.b", 2)]
++      M.recall "k2" m1 `shouldBe` Map.fromList [("k2.a", 2)]
++      M.recall "k3" m1 `shouldBe` Map.empty
++
++      let m2 = M.tick m1
++      M.recall "k1" m2 `shouldBe` Map.fromList [("k1.b", 1)]
++      M.recall "k2" m2 `shouldBe` Map.fromList [("k2.a", 1)]
++      M.recall "k3" m2 `shouldBe` Map.empty
++
++      let m3 = M.tick m2
++      M.recall "k1" m3 `shouldBe` Map.empty
++      M.recall "k2" m3 `shouldBe` Map.empty
++      M.recall "k3" m3 `shouldBe` Map.empty
++
++  describe "combine fn" $ do
++    it "add" $ do
++      let m1 = M.remember (+) "bucket1" 2 "val1" M.empty
++      let m2 = M.remember (+) "bucket1" 3 "val1" m1
++      M.recall "bucket1" m2 `shouldBe` Map.singleton "val1" 5
++
++    it "don't replace" $ do
++      let m1 = M.remember (\_ old -> old) "bucket1" 2 "val1" M.empty
++      let m2 = M.remember (\_ old -> old) "bucket1" 3 "val1" m1
++      M.recall "bucket1" m2 `shouldBe` Map.singleton "val1" 2
++
++    it "replace" $ do
++      let m1 = M.remember const "bucket1" 2 "val1" M.empty
++      let m2 = M.remember const "bucket1" 3 "val1" m1
++      M.recall "bucket1" m2 `shouldBe` Map.singleton "val1" 3
++
++    it "min" $ do
++      let m1 = M.remember min "bucket1" 2 "val1" M.empty
++      let m2 = M.remember min "bucket1" 3 "val1" m1
++      M.recall "bucket1" m2 `shouldBe` Map.singleton "val1" 2
++
++    it "max" $ do
++      let m1 = M.remember max "bucket1" 2 "val1" M.empty
++      let m2 = M.remember max "bucket1" 3 "val1" m1
++      M.recall "bucket1" m2 `shouldBe` Map.singleton "val1" 3
++
++
+diff -w -B -a -d -u -b --new-file ../14_utility_annotate/test/Spec.hs ./test/Spec.hs
+--- ../14_utility_annotate/test/Spec.hs	1970-01-01 02:00:00.000000000 +0200
++++ ./test/Spec.hs	2018-03-04 09:05:53.155915854 +0200
+@@ -0,0 +1,3 @@
++{-# OPTIONS_GHC -F -pgmF hspec-discover #-}
++{-# LANGUAGE NoImplicitPrelude #-}
++
