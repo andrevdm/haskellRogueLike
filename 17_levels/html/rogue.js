@@ -183,30 +183,6 @@ function gridSizeStr(){
   return (config.gridWidth) + "|" + (config.gridHeight);
 }
 
-//"Equality", what's that?
-function arraysEqual(a, b) {
-  if( a === b )
-    return true;
-  
-  if( a == null || b == null )
-    return false;
-  
-  if( a.length != b.length )
-    return false;
-
-  for( var i = 0; i < a.length; ++i ){
-    if( Array.isArray( a[i], b[i]) ) {
-      return arraysEqual( a[i], b[i] );
-    }
-    else{
-      if( a[i] !== b[i] )
-        return false;
-    }
-  }
-  
-  return true;
-}
-
 //Debounce: https://gist.github.com/nmsdvid/8807205
 function debounce(func, wait, immediate) {
   var timeout;
