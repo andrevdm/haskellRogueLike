@@ -18,10 +18,13 @@ import           GameCore
 import qualified GameHost as Host
 import           GameHost (conSendData, conReceiveText)
 
+{-! SECTION< 01_runGame !-}
 runGame :: IO ()
 runGame = Host.runHost manageConnection
+{-! SECTION> 01_runGame !-}
 
       
+{-! SECTION< 01_manageConnection !-}
 manageConnection :: Host.Connection -> IO ()
 manageConnection conn = do
   initCmd <- conn ^. conReceiveText 
@@ -53,8 +56,10 @@ manageConnection conn = do
       case Txt.splitOn "|" t of
         (c:d) -> Just (c, d)
         _ -> Nothing
+{-! SECTION> 01_manageConnection !-}
       
 
+{-! SECTION< 01_initialiseConnection !-}
 initialiseConnection :: Host.Connection -> [Text] -> Either Text World
 initialiseConnection conn cmdData = 
   case parseScreenSize cmdData of
@@ -63,8 +68,10 @@ initialiseConnection conn cmdData =
 
     Just (width, height) ->
       Right $ bootWorld conn (width, height) 
+{-! SECTION> 01_initialiseConnection !-}
 
 
+{-! SECTION< 01_bootWorld !-}
 bootWorld :: Host.Connection -> (Int, Int) -> World
 bootWorld conn screenSize = 
   World { _wdPlayer = mkPlayer
@@ -76,8 +83,10 @@ bootWorld conn screenSize =
 
     mkPlayer =
       Player conn screenSize
+{-! SECTION> 01_bootWorld !-}
     
 
+{-! SECTION< 01_runCmd !-}
 runCmd :: Host.Connection -> TVar World -> Text -> [Text] -> IO ()
 runCmd conn worldV cmd cmdData = 
   case cmd of
@@ -96,8 +105,10 @@ runCmd conn worldV cmd cmdData =
 
   where
     updatePlayer f = atomically $ modifyTVar' worldV (\w -> w & wdPlayer %~ f)
+{-! SECTION> 01_runCmd !-}
 
   
+{-! SECTION< 01_other !-}
 sendLog :: Host.Connection -> Text -> IO ()
 sendLog conn err =
   sendData conn $ Ae.encodeText $ UiMessage "log" err
@@ -126,8 +137,10 @@ sendData :: Host.Connection -> Text -> IO ()
 sendData conn t = do
   let lz = Bz.compress . BSL.fromStrict . TxtE.encodeUtf8 $ t
   conn ^. conSendData $ lz
+{-! SECTION> 01_other !-}
 
 
+{-! SECTION< 01_parseScreenSize !-}
 parseScreenSize :: [Text] -> Maybe (Int, Int)
 parseScreenSize cmd = do
   (tx, ty) <- case cmd of
@@ -137,6 +150,5 @@ parseScreenSize cmd = do
   x <- (readMaybe . Txt.unpack $ tx) :: Maybe Int
   y <- (readMaybe . Txt.unpack $ ty) :: Maybe Int
   pure (x, y)
+{-! SECTION> 01_parseScreenSize !-}
 
-
-  

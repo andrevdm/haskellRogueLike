@@ -11,6 +11,8 @@ import qualified Data.Text.Lazy as TxtL
 import qualified Data.Aeson as Ae
 import           Data.Aeson.Text
 
+{-! SECTION< 01_json_extend !-}
 encodeText :: Ae.ToJSON a => a -> Text
 encodeText =
   TxtL.toStrict . encodeToLazyText
+{-! SECTION> 01_json_extend !-}

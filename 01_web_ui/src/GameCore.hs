@@ -29,6 +29,7 @@ newtype Config = Config { _cfgKeys :: Map Text Text
 {-! SECTION> 01_types !-}
 
 
+{-! SECTION< 01_ui_types !-}
 data UiMessage = UiMessage { umCmd :: Text
                            , umMessage :: Text
                            }
@@ -69,8 +70,11 @@ renField drp toLower =
   Txt.unpack . (if toLower then mkLower else identity) . Txt.drop drp . Txt.pack
   where
     mkLower t = Txt.toLower (Txt.take 1 t) <> Txt.drop 1 t
+{-! SECTION> 01_ui_types !-}
 
 
+{-! SECTION> 01_types_lens !-}
 makeLenses ''World
 makeLenses ''Config
 makeLenses ''Player
+{-! SECTION> 01_types_lens !-}
