@@ -1,6 +1,6 @@
 diff -w -B -a -d -u -b -r --new-file 17_levels/src/Entities.hs 18_multi_level/src/Entities.hs
---- 17_levels/src/Entities.hs	2018-03-05 12:11:01.237072915 +0200
-+++ 18_multi_level/src/Entities.hs	2018-03-05 12:11:01.245072766 +0200
+--- 17_levels/src/Entities.hs	2018-03-05 14:23:29.947128127 +0200
++++ 18_multi_level/src/Entities.hs	2018-03-05 14:23:29.955128059 +0200
 @@ -23,6 +23,7 @@
             , (E.Bug       , (25,  3), Nothing)
             , (E.Snake     , (38,  4), Nothing)
@@ -10,8 +10,8 @@ diff -w -B -a -d -u -b -r --new-file 17_levels/src/Entities.hs 18_multi_level/sr
    in
    let mkData (typ, pos@(x, y), l) (tiles', entities', loads') =
 diff -w -B -a -d -u -b -r --new-file 17_levels/src/EntityType.hs 18_multi_level/src/EntityType.hs
---- 17_levels/src/EntityType.hs	2018-03-05 12:11:01.241072841 +0200
-+++ 18_multi_level/src/EntityType.hs	2018-03-05 12:11:01.249072692 +0200
+--- 17_levels/src/EntityType.hs	2018-03-05 14:23:29.947128127 +0200
++++ 18_multi_level/src/EntityType.hs	2018-03-05 14:23:29.955128059 +0200
 @@ -12,5 +12,6 @@
                  | Bug
                  | Snake
@@ -20,8 +20,8 @@ diff -w -B -a -d -u -b -r --new-file 17_levels/src/EntityType.hs 18_multi_level/
                  | Unknown
                  deriving (Show, Eq, Ord)
 diff -w -B -a -d -u -b -r --new-file 17_levels/src/GameCore.hs 18_multi_level/src/GameCore.hs
---- 17_levels/src/GameCore.hs	2018-03-05 12:11:01.237072915 +0200
-+++ 18_multi_level/src/GameCore.hs	2018-03-05 12:11:01.245072766 +0200
+--- 17_levels/src/GameCore.hs	2018-03-05 14:23:29.947128127 +0200
++++ 18_multi_level/src/GameCore.hs	2018-03-05 14:23:29.955128059 +0200
 @@ -75,6 +75,7 @@
                     , _wdEnergyIncrements :: !Int -- ^ amount of energy that is added per game loop
                     , _wdUtilBrainAnnotations :: ![(E.EntityType, [UtilAnnotationEntry], [UtilAnnotationEntry])]
@@ -53,8 +53,8 @@ diff -w -B -a -d -u -b -r --new-file 17_levels/src/GameCore.hs 18_multi_level/sr
  data ViewPortStyle = ViewPortCentre
                     | ViewPortLock PlayerPos
 diff -w -B -a -d -u -b -r --new-file 17_levels/src/GameEngine.hs 18_multi_level/src/GameEngine.hs
---- 17_levels/src/GameEngine.hs	2018-03-05 12:11:01.241072841 +0200
-+++ 18_multi_level/src/GameEngine.hs	2018-03-05 12:11:01.249072692 +0200
+--- 17_levels/src/GameEngine.hs	2018-03-05 14:23:29.947128127 +0200
++++ 18_multi_level/src/GameEngine.hs	2018-03-05 14:23:29.955128059 +0200
 @@ -79,14 +79,14 @@
        Left "missing / invalid screen size"
  
@@ -134,8 +134,8 @@ diff -w -B -a -d -u -b -r --new-file 17_levels/src/GameEngine.hs 18_multi_level/
  updateActorFov :: World -> Actor -> Actor
  updateActorFov w a =
 diff -w -B -a -d -u -b -r --new-file 17_levels/src/Levels/Level01.hs 18_multi_level/src/Levels/Level01.hs
---- 17_levels/src/Levels/Level01.hs	2018-03-05 12:11:01.237072915 +0200
-+++ 18_multi_level/src/Levels/Level01.hs	2018-03-05 12:11:01.245072766 +0200
+--- 17_levels/src/Levels/Level01.hs	2018-03-05 14:23:29.947128127 +0200
++++ 18_multi_level/src/Levels/Level01.hs	2018-03-05 14:23:29.955128059 +0200
 @@ -57,3 +57,13 @@
              , _acPosMemory = M.empty
              , _acProps = Map.empty
@@ -152,7 +152,7 @@ diff -w -B -a -d -u -b -r --new-file 17_levels/src/Levels/Level01.hs 18_multi_le
 +    _ -> []
 diff -w -B -a -d -u -b -r --new-file 17_levels/src/Levels/Level02.hs 18_multi_level/src/Levels/Level02.hs
 --- 17_levels/src/Levels/Level02.hs	1970-01-01 02:00:00.000000000 +0200
-+++ 18_multi_level/src/Levels/Level02.hs	2018-03-05 12:11:01.245072766 +0200
++++ 18_multi_level/src/Levels/Level02.hs	2018-03-05 14:23:29.951128093 +0200
 @@ -0,0 +1,21 @@
 +{-# LANGUAGE NoImplicitPrelude #-}
 +
@@ -176,8 +176,8 @@ diff -w -B -a -d -u -b -r --new-file 17_levels/src/Levels/Level02.hs 18_multi_le
 +    ([], Nothing) -> [ActMoveActor movingActor posTo]
 +    _ -> []
 diff -w -B -a -d -u -b -r --new-file 17_levels/app/Main.hs 18_multi_level/app/Main.hs
---- 17_levels/app/Main.hs	2018-03-05 12:11:01.237072915 +0200
-+++ 18_multi_level/app/Main.hs	2018-03-05 12:11:01.245072766 +0200
+--- 17_levels/app/Main.hs	2018-03-05 14:23:29.947128127 +0200
++++ 18_multi_level/app/Main.hs	2018-03-05 14:23:29.951128093 +0200
 @@ -9,16 +9,24 @@
  import qualified GameCore as GC
  import qualified GameEngine as GE

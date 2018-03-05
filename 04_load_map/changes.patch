@@ -1,7 +1,7 @@
 Common subdirectories: 03_tiles/src/Data and 04_load_map/src/Data
 diff -w -B -a -d -u -b --new-file 03_tiles/src/GameCore.hs 04_load_map/src/GameCore.hs
---- 03_tiles/src/GameCore.hs	2018-03-05 12:11:01.257072543 +0200
-+++ 04_load_map/src/GameCore.hs	2018-03-05 12:11:01.253072618 +0200
+--- 03_tiles/src/GameCore.hs	2018-03-05 14:23:29.967127957 +0200
++++ 04_load_map/src/GameCore.hs	2018-03-05 14:23:29.963127991 +0200
 @@ -18,10 +18,12 @@
  
  data Player = Player { _plConn :: !Host.Connection
@@ -34,8 +34,8 @@ diff -w -B -a -d -u -b --new-file 03_tiles/src/GameCore.hs 04_load_map/src/GameC
  
  
 diff -w -B -a -d -u -b --new-file 03_tiles/src/GameEngine.hs 04_load_map/src/GameEngine.hs
---- 03_tiles/src/GameEngine.hs	2018-03-05 12:11:01.257072543 +0200
-+++ 04_load_map/src/GameEngine.hs	2018-03-05 12:11:01.253072618 +0200
+--- 03_tiles/src/GameEngine.hs	2018-03-05 14:23:29.967127957 +0200
++++ 04_load_map/src/GameEngine.hs	2018-03-05 14:23:29.963127991 +0200
 @@ -5,13 +5,17 @@
  module GameEngine where
  

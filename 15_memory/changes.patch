@@ -1,7 +1,7 @@
 Common subdirectories: 14_utility_annotate/src/Data and 15_memory/src/Data
 diff -w -B -a -d -u -b --new-file 14_utility_annotate/src/GameCore.hs 15_memory/src/GameCore.hs
---- 14_utility_annotate/src/GameCore.hs	2018-03-05 12:11:01.269072320 +0200
-+++ 15_memory/src/GameCore.hs	2018-03-05 12:11:01.273072245 +0200
+--- 14_utility_annotate/src/GameCore.hs	2018-03-05 14:23:29.979127855 +0200
++++ 15_memory/src/GameCore.hs	2018-03-05 14:23:29.983127821 +0200
 @@ -17,6 +17,7 @@
  import           Control.Lens.TH (makeLenses)
  import           Control.Monad.Writer.Strict (Writer)
@@ -27,8 +27,8 @@ diff -w -B -a -d -u -b --new-file 14_utility_annotate/src/GameCore.hs 15_memory/
  
  data Player = Player { _plConn :: !Host.Connection
 diff -w -B -a -d -u -b --new-file 14_utility_annotate/src/GameEngine.hs 15_memory/src/GameEngine.hs
---- 14_utility_annotate/src/GameEngine.hs	2018-03-05 12:11:01.273072245 +0200
-+++ 15_memory/src/GameEngine.hs	2018-03-05 12:11:01.277072171 +0200
+--- 14_utility_annotate/src/GameEngine.hs	2018-03-05 14:23:29.979127855 +0200
++++ 15_memory/src/GameEngine.hs	2018-03-05 14:23:29.987127787 +0200
 @@ -24,6 +24,7 @@
  import           Control.Monad.Writer.Strict (runWriter)
  import           Control.Concurrent.STM (atomically, readTVar, newTVar, modifyTVar', TVar)
@@ -82,7 +82,7 @@ diff -w -B -a -d -u -b --new-file 14_utility_annotate/src/GameEngine.hs 15_memor
 +  a & acPosMemory %~ M.tick
 diff -w -B -a -d -u -b --new-file 14_utility_annotate/src/Memory.hs 15_memory/src/Memory.hs
 --- 14_utility_annotate/src/Memory.hs	1970-01-01 02:00:00.000000000 +0200
-+++ 15_memory/src/Memory.hs	2018-03-05 12:11:01.273072245 +0200
++++ 15_memory/src/Memory.hs	2018-03-05 14:23:29.983127821 +0200
 @@ -0,0 +1,79 @@
 +{-# LANGUAGE NoImplicitPrelude #-}
 +
@@ -164,8 +164,8 @@ diff -w -B -a -d -u -b --new-file 14_utility_annotate/src/Memory.hs 15_memory/sr
 +fromList :: (Ord a) => [(Text, [(a, Int)])] -> Memory a
 +fromList vs = Memory . Map.fromList $ Map.fromList <<$>> vs
 diff -w -B -a -d -u -b --new-file 14_utility_annotate/src/UtilityBrain.hs 15_memory/src/UtilityBrain.hs
---- 14_utility_annotate/src/UtilityBrain.hs	2018-03-05 12:11:01.269072320 +0200
-+++ 15_memory/src/UtilityBrain.hs	2018-03-05 12:11:01.273072245 +0200
+--- 14_utility_annotate/src/UtilityBrain.hs	2018-03-05 14:23:29.979127855 +0200
++++ 15_memory/src/UtilityBrain.hs	2018-03-05 14:23:29.983127821 +0200
 @@ -3,6 +3,7 @@
  {-# LANGUAGE OverloadedStrings #-}
  {-# LANGUAGE ScopedTypeVariables #-}

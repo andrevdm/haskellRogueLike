@@ -1,7 +1,7 @@
 Common subdirectories: 06_moving/src/Data and 07_collisions/src/Data
 diff -w -B -a -d -u -b --new-file 06_moving/src/GameCore.hs 07_collisions/src/GameCore.hs
---- 06_moving/src/GameCore.hs	2018-03-05 12:11:01.245072766 +0200
-+++ 07_collisions/src/GameCore.hs	2018-03-05 12:11:01.257072543 +0200
+--- 06_moving/src/GameCore.hs	2018-03-05 14:23:29.951128093 +0200
++++ 07_collisions/src/GameCore.hs	2018-03-05 14:23:29.967127957 +0200
 @@ -42,7 +42,8 @@
                     , _wdActors :: !(Map Aid Actor)
                     }
@@ -13,8 +13,8 @@ diff -w -B -a -d -u -b --new-file 06_moving/src/GameCore.hs 07_collisions/src/Ga
  
  
 diff -w -B -a -d -u -b --new-file 06_moving/src/GameEngine.hs 07_collisions/src/GameEngine.hs
---- 06_moving/src/GameEngine.hs	2018-03-05 12:11:01.245072766 +0200
-+++ 07_collisions/src/GameEngine.hs	2018-03-05 12:11:01.257072543 +0200
+--- 06_moving/src/GameEngine.hs	2018-03-05 14:23:29.951128093 +0200
++++ 07_collisions/src/GameEngine.hs	2018-03-05 14:23:29.967127957 +0200
 @@ -15,7 +15,7 @@
  import qualified Data.ByteString.Lazy as BSL
  import qualified Codec.Compression.BZip as Bz

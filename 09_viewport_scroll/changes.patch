@@ -1,7 +1,7 @@
 Common subdirectories: 08_layers/src/Data and 09_viewport_scroll/src/Data
 diff -w -B -a -d -u -b --new-file 08_layers/src/GameCore.hs 09_viewport_scroll/src/GameCore.hs
---- 08_layers/src/GameCore.hs	2018-03-05 12:11:01.261072469 +0200
-+++ 09_viewport_scroll/src/GameCore.hs	2018-03-05 12:11:01.241072841 +0200
+--- 08_layers/src/GameCore.hs	2018-03-05 14:23:29.971127923 +0200
++++ 09_viewport_scroll/src/GameCore.hs	2018-03-05 14:23:29.951128093 +0200
 @@ -34,6 +34,7 @@
                       , _plActor :: !Actor
                       , _plScreenSize :: !(Int, Int)
@@ -28,8 +28,8 @@ diff -w -B -a -d -u -b --new-file 08_layers/src/GameCore.hs 09_viewport_scroll/s
  
  data UiMessage = UiMessage { umCmd :: !Text
 diff -w -B -a -d -u -b --new-file 08_layers/src/GameEngine.hs 09_viewport_scroll/src/GameEngine.hs
---- 08_layers/src/GameEngine.hs	2018-03-05 12:11:01.265072395 +0200
-+++ 09_viewport_scroll/src/GameEngine.hs	2018-03-05 12:11:01.241072841 +0200
+--- 08_layers/src/GameEngine.hs	2018-03-05 14:23:29.971127923 +0200
++++ 09_viewport_scroll/src/GameEngine.hs	2018-03-05 14:23:29.951128093 +0200
 @@ -109,8 +109,14 @@
                                         , ("end"     , "Move:down-left")
                                         , ("b"       , "Move:down-left")

@@ -1,7 +1,7 @@
 Common subdirectories: 04_load_map/src/Data and 05_actors/src/Data
 diff -w -B -a -d -u -b --new-file 04_load_map/src/Entities.hs 05_actors/src/Entities.hs
---- 04_load_map/src/Entities.hs	2018-03-05 12:11:01.253072618 +0200
-+++ 05_actors/src/Entities.hs	2018-03-05 12:11:01.265072395 +0200
+--- 04_load_map/src/Entities.hs	2018-03-05 14:23:29.963127991 +0200
++++ 05_actors/src/Entities.hs	2018-03-05 14:23:29.975127889 +0200
 @@ -19,6 +19,9 @@
             , (E.Door      , (26, 15), Just "+")
             , (E.DoorClosed, (21, 15), Just "-")
@@ -13,8 +13,8 @@ diff -w -B -a -d -u -b --new-file 04_load_map/src/Entities.hs 05_actors/src/Enti
    in
    let mkData (typ, pos@(x, y), l) (tiles', entities', loads') =
 diff -w -B -a -d -u -b --new-file 04_load_map/src/EntityType.hs 05_actors/src/EntityType.hs
---- 04_load_map/src/EntityType.hs	2018-03-05 12:11:01.253072618 +0200
-+++ 05_actors/src/EntityType.hs	2018-03-05 12:11:01.265072395 +0200
+--- 04_load_map/src/EntityType.hs	2018-03-05 14:23:29.963127991 +0200
++++ 05_actors/src/EntityType.hs	2018-03-05 14:23:29.975127889 +0200
 @@ -8,5 +8,8 @@
                  | Door
                  | DoorClosed
@@ -25,8 +25,8 @@ diff -w -B -a -d -u -b --new-file 04_load_map/src/EntityType.hs 05_actors/src/En
                  | Unknown
                  deriving (Show, Eq, Ord)
 diff -w -B -a -d -u -b --new-file 04_load_map/src/GameCore.hs 05_actors/src/GameCore.hs
---- 04_load_map/src/GameCore.hs	2018-03-05 12:11:01.253072618 +0200
-+++ 05_actors/src/GameCore.hs	2018-03-05 12:11:01.265072395 +0200
+--- 04_load_map/src/GameCore.hs	2018-03-05 14:23:29.963127991 +0200
++++ 05_actors/src/GameCore.hs	2018-03-05 14:23:29.971127923 +0200
 @@ -11,12 +11,27 @@
  import qualified Data.Text as Txt
  import           Data.Map.Strict (Map)
@@ -71,8 +71,8 @@ diff -w -B -a -d -u -b --new-file 04_load_map/src/GameCore.hs 05_actors/src/Game
 +makeLenses ''Actor
 \ No newline at end of file
 diff -w -B -a -d -u -b --new-file 04_load_map/src/GameEngine.hs 05_actors/src/GameEngine.hs
---- 04_load_map/src/GameEngine.hs	2018-03-05 12:11:01.253072618 +0200
-+++ 05_actors/src/GameEngine.hs	2018-03-05 12:11:01.265072395 +0200
+--- 04_load_map/src/GameEngine.hs	2018-03-05 14:23:29.963127991 +0200
++++ 05_actors/src/GameEngine.hs	2018-03-05 14:23:29.975127889 +0200
 @@ -14,6 +14,7 @@
  import qualified Data.Aeson.Text.Extended as Ae
  import qualified Data.ByteString.Lazy as BSL

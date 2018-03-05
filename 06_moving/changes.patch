@@ -1,7 +1,7 @@
 Common subdirectories: 05_actors/src/Data and 06_moving/src/Data
 diff -w -B -a -d -u -b --new-file 05_actors/src/GameCore.hs 06_moving/src/GameCore.hs
---- 05_actors/src/GameCore.hs	2018-03-05 12:11:01.265072395 +0200
-+++ 06_moving/src/GameCore.hs	2018-03-05 12:11:01.245072766 +0200
+--- 05_actors/src/GameCore.hs	2018-03-05 14:23:29.971127923 +0200
++++ 06_moving/src/GameCore.hs	2018-03-05 14:23:29.951128093 +0200
 @@ -60,6 +60,8 @@
  newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
  newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
@@ -12,8 +12,8 @@ diff -w -B -a -d -u -b --new-file 05_actors/src/GameCore.hs 06_moving/src/GameCo
  data UiMessage = UiMessage { umCmd :: !Text
                             , umMessage :: !Text
 diff -w -B -a -d -u -b --new-file 05_actors/src/GameEngine.hs 06_moving/src/GameEngine.hs
---- 05_actors/src/GameEngine.hs	2018-03-05 12:11:01.265072395 +0200
-+++ 06_moving/src/GameEngine.hs	2018-03-05 12:11:01.245072766 +0200
+--- 05_actors/src/GameEngine.hs	2018-03-05 14:23:29.975127889 +0200
++++ 06_moving/src/GameEngine.hs	2018-03-05 14:23:29.951128093 +0200
 @@ -93,7 +93,24 @@
          }
    where

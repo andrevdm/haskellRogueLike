@@ -1,7 +1,7 @@
 Common subdirectories: 07_collisions/src/Data and 08_layers/src/Data
 diff -w -B -a -d -u -b --new-file 07_collisions/src/GameCore.hs 08_layers/src/GameCore.hs
---- 07_collisions/src/GameCore.hs	2018-03-05 12:11:01.257072543 +0200
-+++ 08_layers/src/GameCore.hs	2018-03-05 12:11:01.261072469 +0200
+--- 07_collisions/src/GameCore.hs	2018-03-05 14:23:29.967127957 +0200
++++ 08_layers/src/GameCore.hs	2018-03-05 14:23:29.971127923 +0200
 @@ -88,7 +88,7 @@
  data UiDrawCommand = UiDrawCommand
                       { drCmd :: !Text
@@ -12,8 +12,8 @@ diff -w -B -a -d -u -b --new-file 07_collisions/src/GameCore.hs 08_layers/src/Ga
  
  
 diff -w -B -a -d -u -b --new-file 07_collisions/src/GameEngine.hs 08_layers/src/GameEngine.hs
---- 07_collisions/src/GameEngine.hs	2018-03-05 12:11:01.257072543 +0200
-+++ 08_layers/src/GameEngine.hs	2018-03-05 12:11:01.265072395 +0200
+--- 07_collisions/src/GameEngine.hs	2018-03-05 14:23:29.967127957 +0200
++++ 08_layers/src/GameEngine.hs	2018-03-05 14:23:29.971127923 +0200
 @@ -209,11 +209,11 @@
  
  drawAndSend :: World -> IO ()
@@ -99,8 +99,8 @@ diff -w -B -a -d -u -b --new-file 07_collisions/src/GameEngine.hs 08_layers/src/
  
  getAllActors :: World -> [Actor]
  getAllActors world =
---- 07_collisions/html/rogue.js	2018-03-05 12:11:01.225073138 +0200
-+++ 08_layers/html/rogue.js	2018-03-05 12:11:01.225073138 +0200
+--- 07_collisions/html/rogue.js	2018-03-05 14:23:29.931128264 +0200
++++ 08_layers/html/rogue.js	2018-03-05 14:23:29.931128264 +0200
 @@ -120,12 +120,14 @@
          //Draw background image of blank tiles
          ctx.drawImage( getCachedBlankCanvas(), 0, 0 );

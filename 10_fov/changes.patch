@@ -1,7 +1,7 @@
 Common subdirectories: 09_viewport_scroll/src/Data and 10_fov/src/Data
 diff -w -B -a -d -u -b --new-file 09_viewport_scroll/src/Entities.hs 10_fov/src/Entities.hs
---- 09_viewport_scroll/src/Entities.hs	2018-03-05 12:11:01.241072841 +0200
-+++ 10_fov/src/Entities.hs	2018-03-05 12:11:01.249072692 +0200
+--- 09_viewport_scroll/src/Entities.hs	2018-03-05 14:23:29.951128093 +0200
++++ 10_fov/src/Entities.hs	2018-03-05 14:23:29.959128025 +0200
 @@ -22,6 +22,7 @@
             , (E.Player    , ( 8,  3), Nothing)
             , (E.Bug       , (25,  3), Nothing)
@@ -11,8 +11,8 @@ diff -w -B -a -d -u -b --new-file 09_viewport_scroll/src/Entities.hs 10_fov/src/
    in
    let mkData (typ, pos@(x, y), l) (tiles', entities', loads') =
 diff -w -B -a -d -u -b --new-file 09_viewport_scroll/src/EntityType.hs 10_fov/src/EntityType.hs
---- 09_viewport_scroll/src/EntityType.hs	2018-03-05 12:11:01.241072841 +0200
-+++ 10_fov/src/EntityType.hs	2018-03-05 12:11:01.253072618 +0200
+--- 09_viewport_scroll/src/EntityType.hs	2018-03-05 14:23:29.951128093 +0200
++++ 10_fov/src/EntityType.hs	2018-03-05 14:23:29.959128025 +0200
 @@ -11,5 +11,6 @@
                  | Player
                  | Bug
@@ -21,8 +21,8 @@ diff -w -B -a -d -u -b --new-file 09_viewport_scroll/src/EntityType.hs 10_fov/sr
                  | Unknown
                  deriving (Show, Eq, Ord)
 diff -w -B -a -d -u -b --new-file 09_viewport_scroll/src/GameCore.hs 10_fov/src/GameCore.hs
---- 09_viewport_scroll/src/GameCore.hs	2018-03-05 12:11:01.241072841 +0200
-+++ 10_fov/src/GameCore.hs	2018-03-05 12:11:01.249072692 +0200
+--- 09_viewport_scroll/src/GameCore.hs	2018-03-05 14:23:29.951128093 +0200
++++ 10_fov/src/GameCore.hs	2018-03-05 14:23:29.959128025 +0200
 @@ -28,6 +28,8 @@
                     , _acEntity :: !Entity
                     , _acWorldPos :: !WorldPos
@@ -33,8 +33,8 @@ diff -w -B -a -d -u -b --new-file 09_viewport_scroll/src/GameCore.hs 10_fov/src/
  
  data Player = Player { _plConn :: !Host.Connection
 diff -w -B -a -d -u -b --new-file 09_viewport_scroll/src/GameEngine.hs 10_fov/src/GameEngine.hs
---- 09_viewport_scroll/src/GameEngine.hs	2018-03-05 12:11:01.241072841 +0200
-+++ 10_fov/src/GameEngine.hs	2018-03-05 12:11:01.253072618 +0200
+--- 09_viewport_scroll/src/GameEngine.hs	2018-03-05 14:23:29.951128093 +0200
++++ 10_fov/src/GameEngine.hs	2018-03-05 14:23:29.959128025 +0200
 @@ -7,6 +7,7 @@
  import Protolude hiding (Map)
  import           Data.Map.Strict (Map)
