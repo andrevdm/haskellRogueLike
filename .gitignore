@@ -5,4 +5,5 @@ cfd.plot
 ageHeatMap.*
 .vscode/*
 _diff
+changes.patch
 changes.patch.html
