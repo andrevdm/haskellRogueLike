@@ -88,20 +88,21 @@ diff 18_multi_level/html/rogue.js 19_story/html/rogue.js -w -B -a -d -u -b >> ..
 cd ..
 
 
-cat 03_tiles/changes.patch            | ./diff2html > 03_tiles/changes.patch.html
-cat 04_load_map/changes.patch         | ./diff2html > 04_load_map/changes.patch.html
-cat 05_actors/changes.patch           | ./diff2html > 05_actors/changes.patch.html
-cat 06_moving/changes.patch           | ./diff2html > 06_moving/changes.patch.html
-cat 07_collisions/changes.patch       | ./diff2html > 07_collisions/changes.patch.html
-cat 08_layers/changes.patch           | ./diff2html > 08_layers/changes.patch.html
-cat 09_viewport_scroll/changes.patch  | ./diff2html > 09_viewport_scroll/changes.patch.html
-cat 10_fov/changes.patch              | ./diff2html > 10_fov/changes.patch.html
-cat 11_sticky_light/changes.patch     | ./diff2html > 11_sticky_light/changes.patch.html
-cat 12_energy/changes.patch           | ./diff2html > 12_energy/changes.patch.html
-cat 13_utility/changes.patch          | ./diff2html > 13_utility/changes.patch.html
-cat 14_utility_annotate/changes.patch | ./diff2html > 14_utility_annotate/changes.patch.html
-cat 15_memory/changes.patch           | ./diff2html > 15_memory/changes.patch.html
-cat 16_debug/changes.patch            | ./diff2html > 16_debug/changes.patch.html
-cat 17_levels/changes.patch           | ./diff2html > 17_levels/changes.patch.html
-cat 18_multi_level/changes.patch      | ./diff2html > 18_multi_level/changes.patch.html
-cat 19_story/changes.patch            | ./diff2html > 19_story/changes.patch.html
+cat 03_tiles/changes.patch            | ./diff2html > 03_tiles/changes.patch.html  &
+cat 04_load_map/changes.patch         | ./diff2html > 04_load_map/changes.patch.html  &
+cat 05_actors/changes.patch           | ./diff2html > 05_actors/changes.patch.html  &
+cat 06_moving/changes.patch           | ./diff2html > 06_moving/changes.patch.html  &
+cat 07_collisions/changes.patch       | ./diff2html > 07_collisions/changes.patch.html  &
+cat 08_layers/changes.patch           | ./diff2html > 08_layers/changes.patch.html  &
+cat 09_viewport_scroll/changes.patch  | ./diff2html > 09_viewport_scroll/changes.patch.html  &
+cat 10_fov/changes.patch              | ./diff2html > 10_fov/changes.patch.html  &
+cat 11_sticky_light/changes.patch     | ./diff2html > 11_sticky_light/changes.patch.html  &
+cat 12_energy/changes.patch           | ./diff2html > 12_energy/changes.patch.html  &
+cat 13_utility/changes.patch          | ./diff2html > 13_utility/changes.patch.html  &
+cat 14_utility_annotate/changes.patch | ./diff2html > 14_utility_annotate/changes.patch.html  &
+cat 15_memory/changes.patch           | ./diff2html > 15_memory/changes.patch.html  &
+cat 16_debug/changes.patch            | ./diff2html > 16_debug/changes.patch.html  &
+cat 17_levels/changes.patch           | ./diff2html > 17_levels/changes.patch.html  &
+cat 18_multi_level/changes.patch      | ./diff2html > 18_multi_level/changes.patch.html  &
+cat 19_story/changes.patch            | ./diff2html > 19_story/changes.patch.html  &
+wait
