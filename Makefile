@@ -20,6 +20,7 @@ build:
 	 @$(MAKE) -C 17_levels build
 	 @$(MAKE) -C 18_multi_level build
 	 @$(MAKE) -C 19_story build
+	 ./mkDiff.sh
 
 .PHONY: setup
 setup:
