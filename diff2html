@@ -6,7 +6,18 @@
 # Modified by stopyoukid
 # https://gist.github.com/stopyoukid/5888146
  
-html="<html><head><meta charset=\"utf-8\"><title>Pretty Diff</title><style>body {text-align: center;}#wrapper {display: inline-block;margin-top: 1em;min-width: 800px;text-align: left;}h2 {background: #fafafa;background: -moz-linear-gradient(#fafafa, #eaeaea);background: -webkit-linear-gradient(#fafafa, #eaeaea);-ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorstr='#fafafa',endColorstr='#eaeaea')\";border: 1px solid #d8d8d8;border-bottom: 0;color: #555;font: 14px sans-serif;overflow: hidden;padding: 10px 6px;text-shadow: 0 1px 0 white;margin: 0;}.file-diff {border: 1px solid #d8d8d8;margin-bottom: 1em;overflow: auto;padding: 0.5em 0;}.file-diff > div {width: 100%:}pre {margin: 0;font-family: \"Bitstream Vera Sans Mono\", Courier, monospace;font-size: 12px;line-height: 1.4em;text-indent: 0.5em;}.file {color: #aaa;}.delete {background-color: #fdd;}.insert {background-color: #dfd;}.info {color: #a0b;}</style></head><body><div id=\"wrapper\">"
+# Put this in your style/css
+#   .wrapper {display: inline-block;margin-top: 1em;min-width: 800px;text-align: left;}
+#   .diffh2 {background: #fafafa;background: -moz-linear-gradient(#fafafa, #eaeaea);background: -webkit-linear-gradient(#fafafa, #eaeaea);-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr='#fafafa',endColorstr='#eaeaea')";border: 1px solid #d8d8d8;border-bottom: 0;color: #555;font: 14px sans-serif;overflow: hidden;padding: 10px 6px;text-shadow: 0 1px 0 white;margin: 0;}
+#   .file-diff {border: 1px solid #d8d8d8;margin-bottom: 1em;overflow: auto;padding: 0.5em 0;}
+#   .file-diff > div {width: 100%:}
+#   .diffpre {margin: 0;font-family: "Bitstream Vera Sans Mono", Courier, monospace;font-size: 12px;line-height: 1.4em;text-indent: 0.5em;}
+#   .difffile {color: #aaa;}
+#   .delete {background-color: #fdd;}
+#   .insert {background-color: #dfd;}
+#   .info {color: #a0b;}
+
+html="<div class=\"wrapper\">"
 first=1
 diffseen=0
 lastonly=0
@@ -16,7 +27,7 @@ currFile=''
 function addDiffToPage {
   val=$(sed 's|\t.*||' <<< $1) # remove date/time
 
-  html+="<h2>$val</h2>"
+  html+="<h2 class=\".diffh2\">$val</h2>"
 	html+="<div class=\"file-diff\">"
 	html+=$2
 	html+="</div>"
@@ -55,7 +66,7 @@ while [[ $? -eq 0 ]]; do
 		lastonly=1
 
 	elif [[ "$t4" == 'diff' ]]; then
-		cls='file'
+		cls='difffile'
 		if [[ $diffseen -eq 1 ]]; then
             addDiffToPage $currFile $currSection
 		fi
@@ -102,9 +113,9 @@ while [[ $? -eq 0 ]]; do
 
 	# Output the line.
 	if [[ "$cls" ]]; then
-		currSection+='<pre class="'${cls}'">'${s}'</pre>'
+		currSection+='<pre class="diffpre '${cls}'">'${s}'</pre>'
 	else
-		currSection+='<pre>'${s}'</pre>'
+		currSection+='<pre class="diffpre">'${s}'</pre>'
 	fi
 	
 	read -r s
@@ -114,7 +125,7 @@ done
 if [[ "$currSection" ]]; then
     addDiffToPage $currFile $currSection
 fi
-html+="</div></body></html>"
+html+="</div>"
 echo "$html"
 
 IFS=$OIFS
