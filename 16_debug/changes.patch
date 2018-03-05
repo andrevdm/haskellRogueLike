@@ -1,7 +1,7 @@
-Common subdirectories: ../15_memory/src/Data and ./src/Data
-diff -w -B -a -d -u -b --new-file ../15_memory/src/GameCore.hs ./src/GameCore.hs
---- ../15_memory/src/GameCore.hs	2018-03-04 09:15:50.420964801 +0200
-+++ ./src/GameCore.hs	2018-03-04 10:57:56.802067493 +0200
+Common subdirectories: 15_memory/src/Data and 16_debug/src/Data
+diff -w -B -a -d -u -b --new-file 15_memory/src/GameCore.hs 16_debug/src/GameCore.hs
+--- 15_memory/src/GameCore.hs	2018-03-05 12:11:01.273072245 +0200
++++ 16_debug/src/GameCore.hs	2018-03-05 12:11:01.257072543 +0200
 @@ -54,6 +54,9 @@
  
                     -- | The actor's memory about positions
@@ -21,9 +21,9 @@ diff -w -B -a -d -u -b --new-file ../15_memory/src/GameCore.hs ./src/GameCore.hs
  
  data ViewPortStyle = ViewPortCentre
                     | ViewPortLock PlayerPos
-diff -w -B -a -d -u -b --new-file ../15_memory/src/GameEngine.hs ./src/GameEngine.hs
---- ../15_memory/src/GameEngine.hs	2018-03-04 10:30:29.663042181 +0200
-+++ ./src/GameEngine.hs	2018-03-04 11:25:09.679477906 +0200
+diff -w -B -a -d -u -b --new-file 15_memory/src/GameEngine.hs 16_debug/src/GameEngine.hs
+--- 15_memory/src/GameEngine.hs	2018-03-05 12:11:01.277072171 +0200
++++ 16_debug/src/GameEngine.hs	2018-03-05 12:11:01.261072469 +0200
 @@ -140,6 +140,8 @@
                                         , ("shift+v p", "Game:ViewPort:Snap")
                                         , ("shift+v b", "Game:ViewPort:Border")
@@ -91,8 +91,8 @@ diff -w -B -a -d -u -b --new-file ../15_memory/src/GameEngine.hs ./src/GameEngin
    
  flatFov :: Maybe [(WorldPos, [WorldPos])] -> [WorldPos]
  flatFov Nothing = []
---- ../15_memory/html/rogue.js	2018-03-04 08:48:25.416881367 +0200
-+++ ./html/rogue.js	2018-03-04 11:12:33.371901035 +0200
+--- 15_memory/html/rogue.js	2018-03-05 12:11:01.229073064 +0200
++++ 16_debug/html/rogue.js	2018-03-05 12:11:01.229073064 +0200
 @@ -59,6 +59,7 @@
    Mousetrap.pause();
  

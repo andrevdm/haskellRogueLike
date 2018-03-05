@@ -1,6 +1,6 @@
-diff -w -B -a -d -u -b -r --new-file ../18_multi_level/src/Entities.hs ./src/Entities.hs
---- ../18_multi_level/src/Entities.hs	2018-03-04 13:52:24.336887199 +0200
-+++ ./src/Entities.hs	2018-03-04 17:42:19.509585298 +0200
+diff -w -B -a -d -u -b -r --new-file 18_multi_level/src/Entities.hs 19_story/src/Entities.hs
+--- 18_multi_level/src/Entities.hs	2018-03-05 12:11:01.245072766 +0200
++++ 19_story/src/Entities.hs	2018-03-05 12:11:01.265072395 +0200
 @@ -24,6 +24,9 @@
             , (E.Snake     , (38,  4), Nothing)
             , (E.Dark      , (43, 11), Nothing)
@@ -11,9 +11,9 @@ diff -w -B -a -d -u -b -r --new-file ../18_multi_level/src/Entities.hs ./src/Ent
             ]
    in
    let mkData (typ, pos@(x, y), l) (tiles', entities', loads') =
-diff -w -B -a -d -u -b -r --new-file ../18_multi_level/src/EntityType.hs ./src/EntityType.hs
---- ../18_multi_level/src/EntityType.hs	2018-03-04 13:52:17.621065268 +0200
-+++ ./src/EntityType.hs	2018-03-04 17:40:01.615115006 +0200
+diff -w -B -a -d -u -b -r --new-file 18_multi_level/src/EntityType.hs 19_story/src/EntityType.hs
+--- 18_multi_level/src/EntityType.hs	2018-03-05 12:11:01.249072692 +0200
++++ 19_story/src/EntityType.hs	2018-03-05 12:11:01.269072320 +0200
 @@ -13,5 +13,8 @@
                  | Snake
                  | Dark
@@ -23,9 +23,9 @@ diff -w -B -a -d -u -b -r --new-file ../18_multi_level/src/EntityType.hs ./src/E
 +                | Key
                  | Unknown
                  deriving (Show, Eq, Ord)
-diff -w -B -a -d -u -b -r --new-file ../18_multi_level/src/GameCore.hs ./src/GameCore.hs
---- ../18_multi_level/src/GameCore.hs	2018-03-04 15:25:51.874671231 +0200
-+++ ./src/GameCore.hs	2018-03-04 17:58:44.613367428 +0200
+diff -w -B -a -d -u -b -r --new-file 18_multi_level/src/GameCore.hs 19_story/src/GameCore.hs
+--- 18_multi_level/src/GameCore.hs	2018-03-05 12:11:01.245072766 +0200
++++ 19_story/src/GameCore.hs	2018-03-05 12:11:01.265072395 +0200
 @@ -97,7 +97,7 @@
  data Level = Level { _lvlName :: !Text
                     , _lvlBoot :: !(World -> World)
@@ -56,9 +56,9 @@ diff -w -B -a -d -u -b -r --new-file ../18_multi_level/src/GameCore.hs ./src/Gam
  
  data ViewPortStyle = ViewPortCentre
                     | ViewPortLock PlayerPos
-diff -w -B -a -d -u -b -r --new-file ../18_multi_level/src/GameEngine.hs ./src/GameEngine.hs
---- ../18_multi_level/src/GameEngine.hs	2018-03-04 15:38:15.017501601 +0200
-+++ ./src/GameEngine.hs	2018-03-04 17:58:51.859380301 +0200
+diff -w -B -a -d -u -b -r --new-file 18_multi_level/src/GameEngine.hs 19_story/src/GameEngine.hs
+--- 18_multi_level/src/GameEngine.hs	2018-03-05 12:11:01.249072692 +0200
++++ 19_story/src/GameEngine.hs	2018-03-05 12:11:01.269072320 +0200
 @@ -431,6 +431,12 @@
      ActTogglePlayerProp prop valEnabled ->
        world & (wdPlayer . plActor . acProps) %~ Map.alter (toggleMapProp valEnabled) prop
@@ -113,9 +113,9 @@ diff -w -B -a -d -u -b -r --new-file ../18_multi_level/src/GameEngine.hs ./src/G
     in
     Just $ runActions world actions 
  
-diff -w -B -a -d -u -b -r --new-file ../18_multi_level/src/Levels/Level01.hs ./src/Levels/Level01.hs
---- ../18_multi_level/src/Levels/Level01.hs	2018-03-04 15:26:00.007119779 +0200
-+++ ./src/Levels/Level01.hs	2018-03-04 18:20:27.784598643 +0200
+diff -w -B -a -d -u -b -r --new-file 18_multi_level/src/Levels/Level01.hs 19_story/src/Levels/Level01.hs
+--- 18_multi_level/src/Levels/Level01.hs	2018-03-05 12:11:01.245072766 +0200
++++ 19_story/src/Levels/Level01.hs	2018-03-05 12:11:01.265072395 +0200
 @@ -1,7 +1,8 @@
  {-# LANGUAGE NoImplicitPrelude #-}
  {-# LANGUAGE OverloadedStrings #-}
@@ -220,9 +220,9 @@ diff -w -B -a -d -u -b -r --new-file ../18_multi_level/src/Levels/Level01.hs ./s
 +isPlayerMoving :: World -> Actor -> Bool
 +isPlayerMoving w a =
 +  w ^. wdPlayer ^. plActor ^. acId == a ^. acId
-diff -w -B -a -d -u -b -r --new-file ../18_multi_level/src/Levels/Level02.hs ./src/Levels/Level02.hs
---- ../18_multi_level/src/Levels/Level02.hs	2018-03-04 15:19:35.842040402 +0200
-+++ ./src/Levels/Level02.hs	2018-03-04 17:24:18.779604590 +0200
+diff -w -B -a -d -u -b -r --new-file 18_multi_level/src/Levels/Level02.hs 19_story/src/Levels/Level02.hs
+--- 18_multi_level/src/Levels/Level02.hs	2018-03-05 12:11:01.245072766 +0200
++++ 19_story/src/Levels/Level02.hs	2018-03-05 12:11:01.265072395 +0200
 @@ -1,19 +1,31 @@
  {-# LANGUAGE NoImplicitPrelude #-}
 +{-# LANGUAGE OverloadedStrings #-}
@@ -259,9 +259,9 @@ diff -w -B -a -d -u -b -r --new-file ../18_multi_level/src/Levels/Level02.hs ./s
    case (destActors, destEntityType) of
      ([], Just E.Blank) -> [ActMoveActor movingActor posTo]
      ([], Just E.Door) -> [ActMoveActor movingActor posTo]
-diff -w -B -a -d -u -b -r --new-file ../18_multi_level/app/Main.hs ./app/Main.hs
---- ../18_multi_level/app/Main.hs	2018-03-04 15:15:02.280162588 +0200
-+++ ./app/Main.hs	2018-03-04 17:17:18.478485007 +0200
+diff -w -B -a -d -u -b -r --new-file 18_multi_level/app/Main.hs 19_story/app/Main.hs
+--- 18_multi_level/app/Main.hs	2018-03-05 12:11:01.245072766 +0200
++++ 19_story/app/Main.hs	2018-03-05 12:11:01.265072395 +0200
 @@ -18,15 +18,7 @@
    GE.runGame (getLevel map01 map02)
  

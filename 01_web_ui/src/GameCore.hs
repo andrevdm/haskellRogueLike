@@ -15,7 +15,7 @@ import           Control.Lens.TH (makeLenses)
 
 import qualified GameHost as Host
 
-
+{-! SECTION< 01_types !-}
 data Player = Player { _plConn :: !Host.Connection
                      , _plScreenSize :: !(Int, Int)
                      }
@@ -26,7 +26,7 @@ data World = World { _wdPlayer :: !Player
 
 newtype Config = Config { _cfgKeys :: Map Text Text
                         }
-
+{-! SECTION> 01_types !-}
 
 
 data UiMessage = UiMessage { umCmd :: Text

@@ -1,6 +1,6 @@
-diff -w -B -a -d -u -b --new-file ../11_sticky_light/src/BoundedInt.hs ./src/BoundedInt.hs
---- ../11_sticky_light/src/BoundedInt.hs	1970-01-01 02:00:00.000000000 +0200
-+++ ./src/BoundedInt.hs	2018-03-03 09:05:03.987103200 +0200
+diff -w -B -a -d -u -b --new-file 11_sticky_light/src/BoundedInt.hs 12_energy/src/BoundedInt.hs
+--- 11_sticky_light/src/BoundedInt.hs	1970-01-01 02:00:00.000000000 +0200
++++ 12_energy/src/BoundedInt.hs	2018-03-05 12:11:01.273072245 +0200
 @@ -0,0 +1,37 @@
 +{-# LANGUAGE NoImplicitPrelude #-}
 +
@@ -39,10 +39,10 @@ diff -w -B -a -d -u -b --new-file ../11_sticky_light/src/BoundedInt.hs ./src/Bou
 +update :: (Int -> Int) -> BInt -> BInt
 +update fn (BInt (maxBound, v)) =
 +  BInt (maxBound, max 0 . min maxBound $ fn v)
-Common subdirectories: ../11_sticky_light/src/Data and ./src/Data
-diff -w -B -a -d -u -b --new-file ../11_sticky_light/src/GameCore.hs ./src/GameCore.hs
---- ../11_sticky_light/src/GameCore.hs	2018-03-04 08:28:02.258095727 +0200
-+++ ./src/GameCore.hs	2018-03-04 08:27:52.254242043 +0200
+Common subdirectories: 11_sticky_light/src/Data and 12_energy/src/Data
+diff -w -B -a -d -u -b --new-file 11_sticky_light/src/GameCore.hs 12_energy/src/GameCore.hs
+--- 11_sticky_light/src/GameCore.hs	2018-03-05 12:11:01.249072692 +0200
++++ 12_energy/src/GameCore.hs	2018-03-05 12:11:01.273072245 +0200
 @@ -16,6 +16,7 @@
  
  import qualified GameHost as Host
@@ -77,9 +77,9 @@ diff -w -B -a -d -u -b --new-file ../11_sticky_light/src/GameCore.hs ./src/GameC
                     }
  
  data Config = Config { _cfgKeys :: !(Map Text Text)
-diff -w -B -a -d -u -b --new-file ../11_sticky_light/src/GameEngine.hs ./src/GameEngine.hs
---- ../11_sticky_light/src/GameEngine.hs	2018-03-04 08:12:58.236233701 +0200
-+++ ./src/GameEngine.hs	2018-03-04 08:15:22.440277532 +0200
+diff -w -B -a -d -u -b --new-file 11_sticky_light/src/GameEngine.hs 12_energy/src/GameEngine.hs
+--- 11_sticky_light/src/GameEngine.hs	2018-03-05 12:11:01.249072692 +0200
++++ 12_energy/src/GameEngine.hs	2018-03-05 12:11:01.273072245 +0200
 @@ -26,6 +26,7 @@
  import           GameHost (conSendData, conReceiveText)
  import qualified Entities as E

@@ -1,7 +1,7 @@
-Common subdirectories: ../13_utility/src/Data and ./src/Data
-diff -w -B -a -d -u -b --new-file ../13_utility/src/GameCore.hs ./src/GameCore.hs
---- ../13_utility/src/GameCore.hs	2018-03-04 08:49:14.592252002 +0200
-+++ ./src/GameCore.hs	2018-03-04 08:48:45.604622557 +0200
+Common subdirectories: 13_utility/src/Data and 14_utility_annotate/src/Data
+diff -w -B -a -d -u -b --new-file 13_utility/src/GameCore.hs 14_utility_annotate/src/GameCore.hs
+--- 13_utility/src/GameCore.hs	2018-03-05 12:11:01.253072618 +0200
++++ 14_utility_annotate/src/GameCore.hs	2018-03-05 12:11:01.269072320 +0200
 @@ -8,11 +8,14 @@
  module GameCore where
  
@@ -74,9 +74,9 @@ diff -w -B -a -d -u -b --new-file ../13_utility/src/GameCore.hs ./src/GameCore.h
  makeLenses ''World
  makeLenses ''Config
  makeLenses ''Player
-diff -w -B -a -d -u -b --new-file ../13_utility/src/GameEngine.hs ./src/GameEngine.hs
---- ../13_utility/src/GameEngine.hs	2018-03-04 08:34:59.520152002 +0200
-+++ ./src/GameEngine.hs	2018-03-04 08:36:52.190404120 +0200
+diff -w -B -a -d -u -b --new-file 13_utility/src/GameEngine.hs 14_utility_annotate/src/GameEngine.hs
+--- 13_utility/src/GameEngine.hs	2018-03-05 12:11:01.257072543 +0200
++++ 14_utility_annotate/src/GameEngine.hs	2018-03-05 12:11:01.273072245 +0200
 @@ -11,6 +11,7 @@
  import qualified Data.Map.Strict as Map
  import qualified Data.List as Lst
@@ -181,9 +181,9 @@ diff -w -B -a -d -u -b --new-file ../13_utility/src/GameEngine.hs ./src/GameEngi
        in
  
        let actorsThatCanMove = filter
-diff -w -B -a -d -u -b --new-file ../13_utility/src/UtilityBrain.hs ./src/UtilityBrain.hs
---- ../13_utility/src/UtilityBrain.hs	2018-03-03 21:23:50.044058935 +0200
-+++ ./src/UtilityBrain.hs	2018-03-04 08:38:43.212757698 +0200
+diff -w -B -a -d -u -b --new-file 13_utility/src/UtilityBrain.hs 14_utility_annotate/src/UtilityBrain.hs
+--- 13_utility/src/UtilityBrain.hs	2018-03-05 12:11:01.253072618 +0200
++++ 14_utility_annotate/src/UtilityBrain.hs	2018-03-05 12:11:01.269072320 +0200
 @@ -14,25 +14,37 @@
  
  import Protolude 

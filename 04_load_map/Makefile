@@ -9,7 +9,6 @@ setup:
 .PHONY: build
 build:
 	stack build 
-	diff ../03_tiles/src/ ./src/ -w -B -a -d -u -b --new-file > changes.patch | true
 
 .PHONY: test
 test:

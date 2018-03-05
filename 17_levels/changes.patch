@@ -1,6 +1,6 @@
-diff -w -B -a -d -u -b -r --new-file ../16_debug/src/GameCore.hs ./src/GameCore.hs
---- ../16_debug/src/GameCore.hs	2018-03-04 10:57:56.802067493 +0200
-+++ ./src/GameCore.hs	2018-03-04 13:27:31.823680225 +0200
+diff -w -B -a -d -u -b -r --new-file 16_debug/src/GameCore.hs 17_levels/src/GameCore.hs
+--- 16_debug/src/GameCore.hs	2018-03-05 12:11:01.257072543 +0200
++++ 17_levels/src/GameCore.hs	2018-03-05 12:11:01.237072915 +0200
 @@ -74,6 +74,7 @@
                     , _wdMinMoveEnergy :: !Int   -- ^ min energy required before any more, regardless of cost, can be attampted
                     , _wdEnergyIncrements :: !Int -- ^ amount of energy that is added per game loop
@@ -28,9 +28,9 @@ diff -w -B -a -d -u -b -r --new-file ../16_debug/src/GameCore.hs ./src/GameCore.
  makeLenses ''Actor
  makeLenses ''Disposition
 +makeLenses ''Level
-diff -w -B -a -d -u -b -r --new-file ../16_debug/src/GameEngine.hs ./src/GameEngine.hs
---- ../16_debug/src/GameEngine.hs	2018-03-04 11:25:09.679477906 +0200
-+++ ./src/GameEngine.hs	2018-03-04 13:34:41.937589515 +0200
+diff -w -B -a -d -u -b -r --new-file 16_debug/src/GameEngine.hs 17_levels/src/GameEngine.hs
+--- 16_debug/src/GameEngine.hs	2018-03-05 12:11:01.261072469 +0200
++++ 17_levels/src/GameEngine.hs	2018-03-05 12:11:01.241072841 +0200
 @@ -13,7 +13,6 @@
  import qualified Data.List.Index as Lst
  import qualified Data.DList as DLst
@@ -150,9 +150,9 @@ diff -w -B -a -d -u -b -r --new-file ../16_debug/src/GameEngine.hs ./src/GameEng
      
  
  runCmd :: Host.Connection -> TVar World -> Text -> [Text] -> IO ()
-diff -w -B -a -d -u -b -r --new-file ../16_debug/src/Levels/Level01.hs ./src/Levels/Level01.hs
---- ../16_debug/src/Levels/Level01.hs	1970-01-01 02:00:00.000000000 +0200
-+++ ./src/Levels/Level01.hs	2018-03-04 12:16:58.960309765 +0200
+diff -w -B -a -d -u -b -r --new-file 16_debug/src/Levels/Level01.hs 17_levels/src/Levels/Level01.hs
+--- 16_debug/src/Levels/Level01.hs	1970-01-01 02:00:00.000000000 +0200
++++ 17_levels/src/Levels/Level01.hs	2018-03-05 12:11:01.237072915 +0200
 @@ -0,0 +1,59 @@
 +{-# LANGUAGE NoImplicitPrelude #-}
 +{-# LANGUAGE OverloadedStrings #-}
@@ -213,9 +213,9 @@ diff -w -B -a -d -u -b -r --new-file ../16_debug/src/Levels/Level01.hs ./src/Lev
 +            , _acPosMemory = M.empty
 +            , _acProps = Map.empty
 +            }
-diff -w -B -a -d -u -b -r --new-file ../16_debug/app/Main.hs ./app/Main.hs
---- ../16_debug/app/Main.hs	2018-03-04 10:50:00.682203134 +0200
-+++ ./app/Main.hs	2018-03-04 13:30:38.626667916 +0200
+diff -w -B -a -d -u -b -r --new-file 16_debug/app/Main.hs 17_levels/app/Main.hs
+--- 16_debug/app/Main.hs	2018-03-05 12:11:01.257072543 +0200
++++ 17_levels/app/Main.hs	2018-03-05 12:11:01.237072915 +0200
 @@ -1,12 +1,24 @@
  {-# LANGUAGE NoImplicitPrelude #-}
 +{-# LANGUAGE OverloadedStrings #-}

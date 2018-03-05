@@ -1,7 +1,7 @@
-Common subdirectories: ../12_energy/src/Data and ./src/Data
-diff -w -B -a -d -u -b --new-file ../12_energy/src/GameCore.hs ./src/GameCore.hs
---- ../12_energy/src/GameCore.hs	2018-03-04 08:27:52.254242043 +0200
-+++ ./src/GameCore.hs	2018-03-04 08:49:14.592252002 +0200
+Common subdirectories: 12_energy/src/Data and 13_utility/src/Data
+diff -w -B -a -d -u -b --new-file 12_energy/src/GameCore.hs 13_utility/src/GameCore.hs
+--- 12_energy/src/GameCore.hs	2018-03-05 12:11:01.273072245 +0200
++++ 13_utility/src/GameCore.hs	2018-03-05 12:11:01.253072618 +0200
 @@ -35,6 +35,15 @@
                     , _acEnergy :: !B.BInt -- ^ available energy, bounded
                     , _acMoveEnergyCost :: !Int
@@ -65,9 +65,9 @@ diff -w -B -a -d -u -b --new-file ../12_energy/src/GameCore.hs ./src/GameCore.hs
  makeLenses ''Actor
 \ No newline at end of file
 +makeLenses ''Disposition
-diff -w -B -a -d -u -b --new-file ../12_energy/src/GameEngine.hs ./src/GameEngine.hs
---- ../12_energy/src/GameEngine.hs	2018-03-04 08:15:22.440277532 +0200
-+++ ./src/GameEngine.hs	2018-03-04 08:34:59.520152002 +0200
+diff -w -B -a -d -u -b --new-file 12_energy/src/GameEngine.hs 13_utility/src/GameEngine.hs
+--- 12_energy/src/GameEngine.hs	2018-03-05 12:11:01.273072245 +0200
++++ 13_utility/src/GameEngine.hs	2018-03-05 12:11:01.257072543 +0200
 @@ -1,3 +1,4 @@
 +{-# OPTIONS_GHC -fno-warn-type-defaults #-}
  {-# LANGUAGE NoImplicitPrelude #-}
@@ -260,9 +260,9 @@ diff -w -B -a -d -u -b --new-file ../12_energy/src/GameEngine.hs ./src/GameEngin
 +    (\a g -> Map.insert (a ^. acWorldPos) (a ^. acEntity) g)
 +    (w ^. wdMap)
 +    (getAllActors w)
-diff -w -B -a -d -u -b --new-file ../12_energy/src/UtilityBrain.hs ./src/UtilityBrain.hs
---- ../12_energy/src/UtilityBrain.hs	1970-01-01 02:00:00.000000000 +0200
-+++ ./src/UtilityBrain.hs	2018-03-03 21:23:50.044058935 +0200
+diff -w -B -a -d -u -b --new-file 12_energy/src/UtilityBrain.hs 13_utility/src/UtilityBrain.hs
+--- 12_energy/src/UtilityBrain.hs	1970-01-01 02:00:00.000000000 +0200
++++ 13_utility/src/UtilityBrain.hs	2018-03-05 12:11:01.253072618 +0200
 @@ -0,0 +1,165 @@
 +{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 +{-# LANGUAGE NoImplicitPrelude #-}
