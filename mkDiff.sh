@@ -4,6 +4,8 @@ rm -rf _diff | true
 rsync -mr --exclude '.git/***' --exclude '.stack-work' --exclude '_diff/***' --include '*/' --include '*hs' --include '*js' --include '*html' --include '*cabal' --exclude '*' ./[01]*_* ./_diff
 
 find _diff/ -type f -name "*hs" | xargs sed -i 's/{-! SECTION.*//g'
+find _diff/ -type f -name "*js" | xargs sed -i 's/\/\/!SECTION.*//g'
+find _diff/ -type f -name "*html" | xargs sed -i 's/<!-- !SECTION.*//g'
 
 cd _diff
 
