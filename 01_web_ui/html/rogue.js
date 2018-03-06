@@ -20,11 +20,15 @@ function sendKey(k){
   act();
 }
 
+//!SECTION< 01_runWebSocket
 function runWebSocket(userName)
 {
+//!SECTION< 01_runWebSocket_open
   var ws = new WebSocket("ws://localhost:61492/");
   ws.binaryType = 'arraybuffer';
+//!SECTION> 01_runWebSocket_open
 	
+//!SECTION< 01_runWebSocket_onopen
   ws.onopen = function() {
     sendCmd = ( c, d ) => {
       ws.send(c + "|" + (d || ""));
@@ -32,12 +36,16 @@ function runWebSocket(userName)
 
     sendCmd("init", gridSizeStr());
   };
+//!SECTION> 01_runWebSocket_onopen
   
+//!SECTION< 01_runWebSocket_onmessage_decode
   ws.onmessage = function (evt) { 
     var bytes = new Uint8Array(evt.data);
     var m = bzip2.simple(bzip2.array(bytes));
     cmd = JSON.parse(m);
+//!SECTION> 01_runWebSocket_onmessage_decode
 
+//!SECTION< 01_runWebSocket_onmessage_switch
     switch( cmd.cmd ){
       case "config":
         //Load keys
@@ -60,6 +68,7 @@ function runWebSocket(userName)
         alert( cmd.message );
         break;
     }
+//!SECTION> 01_runWebSocket_onmessage_switch
     
     Mousetrap.unpause();
   };
@@ -73,6 +82,7 @@ function runWebSocket(userName)
     socket.close();
   };
 }
+//!SECTION> 01_runWebSocket
 
 function resizeCanvas() {
   var container = document.getElementById("container");
@@ -99,16 +109,19 @@ function resizeCanvas() {
   sendCmd("redraw", gridSizeStr() );
 }
 
+//!SECTION< 01_start
 function start(){
   tilesMain = document.getElementById("tilesMain");
   resizeCanvas();
   runWebSocket();
 }
+//!SECTION> 01_start
 
 function gridSizeStr(){
   return (config.gridWidth) + "|" + (config.gridHeight);
 }
 
+//!SECTION< 01_debounce
 //Debounce: https://gist.github.com/nmsdvid/8807205
 function debounce(func, wait, immediate) {
   var timeout;
@@ -123,7 +136,11 @@ function debounce(func, wait, immediate) {
     if (immediate && !timeout) func.apply(context, args);
   };
 }
-
+//!SECTION> 01_debounce
 
 window.addEventListener('resize', debounce(resizeCanvas, 250), false);
+
+
+//!SECTION< 01_mousetrap_bind
 Mousetrap.bind( "?", () => alert( config.help ) ); 
+//!SECTION> 01_mousetrap_bind

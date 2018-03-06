@@ -131,13 +131,14 @@ buildConfig cfg =
   where
     buildKeys ks = buildKey <$> Map.toList ks
     buildKey (s, a) = UiKey s a
+{-! SECTION> 01_other !-}
 
-
+{-! SECTION< 01_bzip !-}
 sendData :: Host.Connection -> Text -> IO ()
 sendData conn t = do
   let lz = Bz.compress . BSL.fromStrict . TxtE.encodeUtf8 $ t
   conn ^. conSendData $ lz
-{-! SECTION> 01_other !-}
+{-! SECTION> 01_bzip !-}
 
 
 {-! SECTION< 01_parseScreenSize !-}
