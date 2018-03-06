@@ -1,6 +1,7 @@
 var sendCmd = ( c, d ) => {}
 var tilesMain = null;
 
+//!SECTION< 01_config
 var config = { "drawId": 0,
                "help": "",
                "tileWidth": 32,
@@ -8,7 +9,10 @@ var config = { "drawId": 0,
                "gridWidth": 0,
                "gridHeight" : 0
              };
+//!SECTION> 01_config
 
+
+//!SECTION< 01_sendKey
 function sendKey(k){
   //Stop next moves, until the server responds
   Mousetrap.pause();
@@ -19,8 +23,9 @@ function sendKey(k){
   
   act();
 }
+//!SECTION> 01_sendKey
 
-//!SECTION< 01_runWebSocket
+//!SECTION< 01_runWebSocket_fn
 function runWebSocket(userName)
 {
 //!SECTION< 01_runWebSocket_open
@@ -82,8 +87,9 @@ function runWebSocket(userName)
     socket.close();
   };
 }
-//!SECTION> 01_runWebSocket
+//!SECTION> 01_runWebSocket_fn
 
+//!SECTION< 01_resizeCanvas
 function resizeCanvas() {
   var container = document.getElementById("container");
 
@@ -108,6 +114,7 @@ function resizeCanvas() {
   
   sendCmd("redraw", gridSizeStr() );
 }
+//!SECTION> 01_resizeCanvas
 
 //!SECTION< 01_start
 function start(){
@@ -136,9 +143,9 @@ function debounce(func, wait, immediate) {
     if (immediate && !timeout) func.apply(context, args);
   };
 }
-//!SECTION> 01_debounce
 
 window.addEventListener('resize', debounce(resizeCanvas, 250), false);
+//!SECTION> 01_debounce
 
 
 //!SECTION< 01_mousetrap_bind
