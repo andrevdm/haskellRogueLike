@@ -11,18 +11,28 @@ cd _diff
 
 #03
 diff 01_web_ui/src/ 03_tiles/src/ -w -B -a -d -u -b --new-file > ../03_tiles/changes.patch | true
+diff 01_web_ui/html/rogue.html 03_tiles/html/rogue.html -w -B -a -d -u -b >> ../03_tiles/changes.patch | true
+diff 01_web_ui/html/rogue.js 03_tiles/html/rogue.js -w -B -a -d -u -b >> ../03_tiles/changes.patch | true
 
 #04
 diff 03_tiles/src/ 04_load_map/src/ -w -B -a -d -u -b --new-file > ../04_load_map/changes.patch | true
+diff 03_tiles/html/rogue.html 04_load_map/html/rogue.html -w -B -a -d -u -b >> ../04_load_map/changes.patch | true
+diff 03_tiles/html/rogue.js 04_load_map/html/rogue.js -w -B -a -d -u -b >> ../04_load_map/changes.patch | true
 
 #05
 diff 04_load_map/src/ 05_actors/src/ -w -B -a -d -u -b --new-file > ../05_actors/changes.patch | true
+diff 04_load_map/html/rogue.html 05_actors/html/rogue.html -w -B -a -d -u -b >> ../05_actors/changes.patch | true
+diff 04_load_map/html/rogue.js 05_actors/html/rogue.js -w -B -a -d -u -b >> ../05_actors/changes.patch | true
 
 #06
 diff 05_actors/src/ 06_moving/src/ -w -B -a -d -u -b --new-file > ../06_moving/changes.patch | true
+diff 05_actors/html/rogue.html 06_moving/html/rogue.html -w -B -a -d -u -b >> ../06_moving/changes.patch | true
+diff 05_actors/html/rogue.js 06_moving/html/rogue.js -w -B -a -d -u -b >> ../06_moving/changes.patch | true
 
 #07
 diff 06_moving/src/ 07_collisions/src/ -w -B -a -d -u -b --new-file > ../07_collisions/changes.patch | true
+diff 06_moving/html/rogue.html 07_collisions/html/rogue.html -w -B -a -d -u -b >> ../07_collisions/changes.patch | true
+diff 06_moving/html/rogue.js 07_collisions/html/rogue.js -w -B -a -d -u -b >> ../07_collisions/changes.patch | true
 
 #08
 diff 07_collisions/src/ 08_layers/src/ -w -B -a -d -u -b --new-file > ../08_layers/changes.patch | true
