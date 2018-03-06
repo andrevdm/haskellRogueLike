@@ -30,13 +30,13 @@ newtype Config = Config { _cfgKeys :: Map Text Text
 
 
 {-! SECTION< 01_ui_types !-}
-data UiMessage = UiMessage { umCmd :: Text
-                           , umMessage :: Text
+data UiMessage = UiMessage { umCmd :: !Text
+                           , umMessage :: !Text
                            }
                            deriving (Generic)
   
-data UiConfig = UiConfig { ucCmd :: Text
-                         , ucData :: UiConfigData
+data UiConfig = UiConfig { ucCmd :: !Text
+                         , ucData :: !UiConfigData
                          }
                          deriving (Generic)
 
@@ -44,8 +44,8 @@ newtype UiConfigData = UiConfigData { udKeys :: [UiKey]
                                     }
                                     deriving (Generic)
 
-data UiKey = UiKey { ukShortcut :: Text
-                   , ukAction :: Text
+data UiKey = UiKey { ukShortcut :: !Text
+                   , ukAction :: !Text
                    }
                    deriving (Generic)
 
