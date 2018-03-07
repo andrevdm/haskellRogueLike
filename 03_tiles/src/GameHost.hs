@@ -42,8 +42,10 @@ scottyApp =
     Sc.get "/ping" $
       Sc.text "pong"
 
+{-! SECTION< 03_serveTiles !-}
     Sc.get "/tiles.png" $
       Sc.file "html/DungeonCrawl_ProjectUtumnoTileset_0.png"
+{-! SECTION> 03_serveTiles !-}
 
     Sc.get "/:res" $ do
       res <- Sc.param "res"

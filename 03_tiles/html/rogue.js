@@ -10,6 +10,7 @@ var config = { "drawId": 0,
                "gridHeight" : 0
              };
 
+//!SECTION< 03_drawTile
 function drawTile( ctx, img, twidth, theight, dx, dy, trow, tcol ){
   ctx.drawImage(
     img,             //img
@@ -23,7 +24,10 @@ function drawTile( ctx, img, twidth, theight, dx, dy, trow, tcol ){
     theight          //dHeight
   );
 }
+//!SECTION> 03_drawTile
 
+
+//!SECTION< 03_cached
 function tileFromTileId( id ){
   const x = Math.trunc( id / 100 );
   const y = id - (x * 100);
@@ -52,6 +56,7 @@ function getCachedBlankCanvas(){
 
   return config.blank;
 }
+//!SECTION> 03_cached
 
 
 function sendKey(k){
@@ -84,9 +89,11 @@ function runWebSocket(userName)
     cmd = JSON.parse(m);
 
     switch( cmd.cmd ){
+//!SECTION< 03_config
       case "config": {
         config.tiles = {};
         config.blankId = cmd.data.blankId;
+//!SECTION> 03_config
 
         //Load keys
         config.help = "";
@@ -111,6 +118,7 @@ function runWebSocket(userName)
         break;
       }
 
+//!SECTION< 03_draw
       case "draw": {
         config.drawId = Math.random();
         
@@ -122,6 +130,7 @@ function runWebSocket(userName)
 
         break;
       }
+//!SECTION> 03_draw
     }
     
     Mousetrap.unpause();

@@ -12,14 +12,17 @@ import qualified EntityType as E
 {-! SECTION< 03_entities !-}
 tiles :: Map E.EntityType Tile
 entities :: Map E.EntityType Entity
-{-! SECTION< 03_entities !-}
+{-! SECTION> 03_entities !-}
 
+{-! SECTION< 03_entity_create !-}
 (tiles, entities) =
+{-! SECTION< 03_entity_setup !-}
   let is = [ (E.Blank     , (41, 13))
            , (E.Door      , (26, 15))
            , (E.DoorClosed, (21, 15))
            , (E.Wall      , ( 9, 14))
            ]
+{-! SECTION> 03_entity_setup !-}
   in
   let mkData (typ, pos@(x, y)) (tiles', entities') =
         let (entity, tile) = mkEntityAndTile (x * 100 + y) typ pos in
@@ -52,3 +55,4 @@ mkEntityAndTile id typ pic =
 tileUnknown :: Tile
 entityUnknown :: Entity
 (entityUnknown, tileUnknown) = mkEntityAndTile 201 E.Unknown (2, 1)
+{-! SECTION> 03_entity_create !-}

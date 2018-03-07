@@ -81,6 +81,7 @@ bootWorld conn screenSize =
       Player conn screenSize
     
 
+{-! SECTION< 03_runCmd !-}
 runCmd :: Host.Connection -> TVar World -> Text -> [Text] -> IO ()
 runCmd conn worldV cmd cmdData = 
   case cmd of
@@ -92,6 +93,7 @@ runCmd conn worldV cmd cmdData =
           w <- atomically $ readTVar worldV
           drawAndSend w
           sendLog conn "draw"
+{-! SECTION> 03_runCmd !-}
       
     "key" ->
       sendLog conn $ "TODO: " <> cmd <> ": " <> show cmdData
@@ -118,6 +120,7 @@ sendConfig conn config =
   sendData conn . Ae.encodeText $ UiConfig "config" (buildConfig config)
 
 
+{-! SECTION< 03_buildConfig !-}
 buildConfig :: Config -> UiConfigData
 buildConfig cfg =
   UiConfigData { udKeys = buildKeys (cfg ^. cfgKeys)
@@ -127,6 +130,7 @@ buildConfig cfg =
   where
     buildKeys ks = buildKey <$> Map.toList ks
     buildKey (s, a) = UiKey s a
+{-! SECTION> 03_buildConfig !-}
 
 
 sendData :: Host.Connection -> Text -> IO ()
@@ -146,9 +150,11 @@ parseScreenSize cmd = do
   pure (x, y)
 
 
+{-! SECTION< 03_drawAndSend !-}
 drawAndSend :: World -> IO ()
 drawAndSend world = do
   let cmd = Ae.encodeText UiDrawCommand { drCmd = "draw"
                                         , drScreenWidth = world ^. wdPlayer ^. plScreenSize ^. _1
                                         }
   sendData (world ^. wdPlayer ^. plConn) cmd
+{-! SECTION> 03_drawAndSend !-}

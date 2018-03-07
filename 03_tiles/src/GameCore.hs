@@ -45,6 +45,7 @@ data UiMessage = UiMessage { umCmd :: !Text
                            }
                            deriving (Generic)
   
+{-! SECTION< 03_uiConfig !-}
 data UiConfig = UiConfig { ucCmd :: !Text
                          , ucData :: !UiConfigData
                          }
@@ -54,6 +55,7 @@ data UiConfigData = UiConfigData { udKeys :: ![UiKey]
                                  , udBlankId :: !Int
                                  }
                                  deriving (Generic)
+{-! SECTION> 03_uiConfig !-}
 
 data UiKey = UiKey { ukShortcut :: !Text
                    , ukAction :: !Text
@@ -61,10 +63,12 @@ data UiKey = UiKey { ukShortcut :: !Text
                    deriving (Generic)
 
 
+{-! SECTION< 04_drawCommand !-}
 data UiDrawCommand = UiDrawCommand
                      { drCmd :: !Text
                      , drScreenWidth :: !Int
                      } deriving (Generic)
+{-! SECTION> 04_drawCommand !-}
 
 
 instance Ae.ToJSON UiMessage where
