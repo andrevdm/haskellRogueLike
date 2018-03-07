@@ -197,6 +197,7 @@ translatePlayerMap worldTopLeft entityMap =
   Map.fromList entitysInWorld
 
 
+{-! SECTION< 04_coord_translate !-}
 playerCoordToWorld :: WorldPos -> PlayerPos -> WorldPos
 playerCoordToWorld (WorldPos (worldTopX, worldTopY)) (PlayerPos (playerX, playerY)) =
    WorldPos (worldTopX + playerX, worldTopY - playerY)
@@ -205,6 +206,7 @@ playerCoordToWorld (WorldPos (worldTopX, worldTopY)) (PlayerPos (playerX, player
 worldCoordToPlayer :: WorldPos -> WorldPos -> PlayerPos
 worldCoordToPlayer (WorldPos (worldTopX, worldTopY)) (WorldPos (worldX, worldY)) =
    PlayerPos (worldX - worldTopX, -(worldY - worldTopY))
+{-! SECTION> 04_coord_translate !-}
 
   
 drawTilesForPlayer :: World -> Map WorldPos Entity -> Map PlayerPos Tile

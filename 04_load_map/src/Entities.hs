@@ -10,6 +10,7 @@ import qualified Data.Map.Strict as Map
 import           GameCore
 import qualified EntityType as E
 
+{-! SECTION< 04_entities !-}
 tiles :: Map E.EntityType Tile
 entities :: Map E.EntityType Entity
 loadTexts :: Map Text Entity
@@ -35,6 +36,7 @@ loadTexts :: Map Text Entity
     , Map.empty
     )
     is
+{-! SECTION> 04_entities !-}
 
 
 getEntity :: E.EntityType -> Entity

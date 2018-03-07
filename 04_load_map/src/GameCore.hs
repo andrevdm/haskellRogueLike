@@ -16,15 +16,20 @@ import           Control.Lens.TH (makeLenses)
 import qualified GameHost as Host
 import qualified EntityType as E
 
+{-! SECTION< 04_player !-}
 data Player = Player { _plConn :: !Host.Connection
                      , _plScreenSize :: !(Int, Int)
                      , _plWorldTopLeft :: !WorldPos
                      }
+{-! SECTION> 04_player !-}
 
+
+{-! SECTION< 04_world !-}
 data World = World { _wdPlayer :: !Player
                    , _wdConfig :: !Config
                    , _wdMap :: !(Map WorldPos Entity)
                    }
+{-! SECTION> 04_world !-}
 
 newtype Config = Config { _cfgKeys :: Map Text Text
                         }
@@ -40,8 +45,10 @@ data Entity = Entity { _enType :: !E.EntityType
                      , _enProps :: !(Map Text Text)
                      } deriving (Show, Eq, Ord)
 
+{-! SECTION< 04_pos_newtypes !-}
 newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
 newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
+{-! SECTION> 04_pos_newtypes !-}
 
 
 data UiMessage = UiMessage { umCmd :: !Text
