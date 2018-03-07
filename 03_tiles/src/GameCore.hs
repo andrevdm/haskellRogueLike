@@ -27,6 +27,7 @@ data World = World { _wdPlayer :: !Player
 newtype Config = Config { _cfgKeys :: Map Text Text
                         }
 
+{-! SECTION< 03_tile_entity !-}
 data Tile = Tile { _tlName :: !Text
                  , _tlPic :: !(Int, Int)
                  , _tlId :: !Int
@@ -35,8 +36,8 @@ data Tile = Tile { _tlName :: !Text
 data Entity = Entity { _enType :: !E.EntityType
                      , _enTile :: !Tile
                      , _enProps :: !(Map Text Text)
-                     , _enAttribs :: !(Map Text Int)
                      } deriving (Show, Eq, Ord)
+{-! SECTION> 03_tile_entity !-}
 
 
 data UiMessage = UiMessage { umCmd :: !Text

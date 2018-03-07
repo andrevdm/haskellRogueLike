@@ -52,7 +52,7 @@ getTile e = Map.findWithDefault tileUnknown e tiles
 mkEntityAndTile :: Int -> E.EntityType -> (Int, Int) -> (Entity, Tile)
 mkEntityAndTile id typ pic =
   let t = Tile { _tlId = id, _tlName = show typ, _tlPic = pic } in
-  let a = Entity { _enType = typ, _enTile = t, _enProps = Map.empty, _enAttribs = Map.empty} in
+  let a = Entity { _enType = typ, _enTile = t, _enProps = Map.empty} in
   (a, t)
     
 

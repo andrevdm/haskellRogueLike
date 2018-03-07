@@ -15,7 +15,7 @@ import qualified GameEngine as GE
 mkEntityAndTile :: Int -> Text -> (Int, Int) -> (Entity, Tile)
 mkEntityAndTile id name pic =
   let t = Tile { _tlId = id, _tlName = name, _tlPic = pic } in
-  let a = Entity { _enType = E.Blank, _enTile = t, _enProps = Map.empty, _enAttribs = Map.empty} in
+  let a = Entity { _enType = E.Blank, _enTile = t, _enProps = Map.empty} in
   (a, t)
     
 

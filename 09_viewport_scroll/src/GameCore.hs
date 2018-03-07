@@ -56,7 +56,6 @@ data Tile = Tile { _tlName :: !Text
 data Entity = Entity { _enType :: !E.EntityType
                      , _enTile :: !Tile
                      , _enProps :: !(Map Text Text)
-                     , _enAttribs :: !(Map Text Int)
                      } deriving (Show, Eq, Ord)
 
 newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
