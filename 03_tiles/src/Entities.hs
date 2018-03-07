@@ -1,5 +1,4 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Entities where
 
@@ -10,29 +9,28 @@ import qualified Data.Map.Strict as Map
 import           GameCore
 import qualified EntityType as E
 
+{-! SECTION< 03_entities !-}
 tiles :: Map E.EntityType Tile
 entities :: Map E.EntityType Entity
-loadTexts :: Map Text Entity
+{-! SECTION< 03_entities !-}
 
-(tiles, entities, loadTexts) =
-  let is = [ (E.Blank     , (41, 13), Nothing)
-           , (E.Door      , (26, 15), Just "+")
-           , (E.DoorClosed, (21, 15), Just "-")
-           , (E.Wall      , ( 9, 14), Just "w")
+(tiles, entities) =
+  let is = [ (E.Blank     , (41, 13))
+           , (E.Door      , (26, 15))
+           , (E.DoorClosed, (21, 15))
+           , (E.Wall      , ( 9, 14))
            ]
   in
-  let mkData (typ, pos@(x, y), l) (tiles', entities', loads') =
+  let mkData (typ, pos@(x, y)) (tiles', entities') =
         let (entity, tile) = mkEntityAndTile (x * 100 + y) typ pos in
         ( Map.insert typ tile tiles'
         , Map.insert typ entity entities'
-        , maybe loads' (\load -> Map.insert load entity loads') l
         )
   in
   foldr
     mkData
     ( Map.fromList [(E.Unknown, tileUnknown)]
     , Map.fromList [(E.Unknown, entityUnknown)]
-    , Map.empty
     )
     is
 
@@ -47,7 +45,7 @@ getTile e = Map.findWithDefault tileUnknown e tiles
 mkEntityAndTile :: Int -> E.EntityType -> (Int, Int) -> (Entity, Tile)
 mkEntityAndTile id typ pic =
   let t = Tile { _tlId = id, _tlName = show typ, _tlPic = pic } in
-  let a = Entity { _enType = typ, _enTile = t, _enProps = Map.empty, _enAttribs = Map.empty} in
+  let a = Entity { _enType = typ, _enTile = t, _enProps = Map.empty} in
   (a, t)
     
 
