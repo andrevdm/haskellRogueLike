@@ -111,6 +111,7 @@ function runWebSocket(userName)
         break;
       }
 
+//!SECTION< 04_draw
       case "draw": {
         config.drawId = Math.random();
         
@@ -130,6 +131,7 @@ function runWebSocket(userName)
 
         break;
       }
+//!SECTION> 04_draw
     }
     
     Mousetrap.unpause();

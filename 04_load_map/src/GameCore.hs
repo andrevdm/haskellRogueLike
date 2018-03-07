@@ -72,11 +72,13 @@ data UiKey = UiKey { ukShortcut :: !Text
                    deriving (Generic)
 
 
+{-! SECTION< 04_drawCmd !-}
 data UiDrawCommand = UiDrawCommand
                      { drCmd :: !Text
                      , drScreenWidth :: !Int
                      , drMapData :: ![(Int, Int, Int)]
                      } deriving (Generic)
+{-! SECTION> 04_drawCmd !-}
 
 
 instance Ae.ToJSON UiMessage where

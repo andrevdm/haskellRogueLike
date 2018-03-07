@@ -29,6 +29,7 @@ runGame :: IO ()
 runGame = Host.runHost manageConnection
 
       
+{-! SECTION< 04_read_map !-}
 manageConnection :: Host.Connection -> IO ()
 manageConnection conn = do
   initCmd <- conn ^. conReceiveText 
@@ -38,6 +39,7 @@ manageConnection conn = do
       mapData <- Txt.readFile "worlds/simple.csv"
       
       case initialiseConnection conn cmdData mapData of
+{-! SECTION> 04_read_map !-}
         Right world -> do
           worldV <- atomically $ newTVar world
           sendConfig conn $ world ^. wdConfig
@@ -64,6 +66,7 @@ manageConnection conn = do
         _ -> Nothing
       
 
+{-! SECTION< 04_init_boot !-}
 initialiseConnection :: Host.Connection -> [Text] -> Text -> Either Text World
 initialiseConnection conn cmdData mapData = 
   case parseScreenSize cmdData of
@@ -91,6 +94,7 @@ bootWorld conn screenSize mapData =
              , _plScreenSize = screenSize
              , _plWorldTopLeft = WorldPos (0, 0)
              }
+{-! SECTION> 04_init_boot !-}
     
 
 runCmd :: Host.Connection -> TVar World -> Text -> [Text] -> IO ()
@@ -158,6 +162,7 @@ parseScreenSize cmd = do
   pure (x, y)
 
 
+{-! SECTION< 04_drawAndSend !-}
 drawAndSend :: World -> IO ()
 drawAndSend world = do
   let playerTiles = drawTilesForPlayer world (world ^. wdMap) 
@@ -171,8 +176,10 @@ drawAndSend world = do
   where
     mkDrawMapData :: (PlayerPos, Tile) -> (Int, Int, Int)
     mkDrawMapData (PlayerPos (x, y), tile) = (x, y, tile ^. tlId)
+{-! SECTION> 04_drawAndSend !-}
 
   
+{-! SECTION< 04_load_parse !-}
 loadWorld :: Map Text Entity -> Text -> Map WorldPos Entity
 loadWorld chars csv = 
   translatePlayerMap (WorldPos (0, 0)) $ parseWorld chars csv
@@ -195,6 +202,7 @@ translatePlayerMap :: WorldPos -> Map PlayerPos Entity -> Map WorldPos Entity
 translatePlayerMap worldTopLeft entityMap =
   let entitysInWorld = Ar.first (playerCoordToWorld worldTopLeft) <$> Map.toList entityMap  in
   Map.fromList entitysInWorld
+{-! SECTION> 04_load_parse !-}
 
 
 {-! SECTION< 04_coord_translate !-}
@@ -209,6 +217,7 @@ worldCoordToPlayer (WorldPos (worldTopX, worldTopY)) (WorldPos (worldX, worldY))
 {-! SECTION> 04_coord_translate !-}
 
   
+{-! SECTION< 04_drawTilesForPlayer !-}
 drawTilesForPlayer :: World -> Map WorldPos Entity -> Map PlayerPos Tile
 drawTilesForPlayer world entityMap =
   let
@@ -238,3 +247,4 @@ drawTilesForPlayer world entityMap =
   where
     inView topX topY bottomX bottomY (WorldPos (x, y)) _ =
       x >= topX && x < bottomX && y > bottomY && y <= topY
+{-! SECTION> 04_drawTilesForPlayer !-}
