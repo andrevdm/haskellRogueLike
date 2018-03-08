@@ -15,6 +15,7 @@ entities :: Map E.EntityType Entity
 loadTexts :: Map Text Entity
 
 (tiles, entities, loadTexts) =
+{-! SECTION< 05_entities !-}
   let is = [ (E.Blank     , (41, 13), Nothing)
            , (E.Door      , (26, 15), Just "+")
            , (E.DoorClosed, (21, 15), Just "-")
@@ -23,6 +24,7 @@ loadTexts :: Map Text Entity
            , (E.Bug       , (25,  3), Nothing)
            , (E.Snake     , (38,  4), Nothing)
            ]
+{-! SECTION> 05_entities !-}
   in
   let mkData (typ, pos@(x, y), l) (tiles', entities', loads') =
         let (entity, tile) = mkEntityAndTile (x * 100 + y) typ pos in

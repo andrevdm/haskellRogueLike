@@ -76,6 +76,7 @@ initialiseConnection conn cmdData mapData std =
       Right $ bootWorld conn (width, height) mapData std
 
 
+{-! SECTION< 05_bootWorld !-}
 bootWorld :: Host.Connection -> (Int, Int) -> Text -> Rnd.StdGen -> World
 bootWorld conn screenSize mapData std = 
   let
@@ -117,6 +118,7 @@ bootWorld conn screenSize mapData std =
             , _acWorldPos = WorldPos (x, y)
             , _acStdGen = std
             }
+{-! SECTION> 05_bootWorld !-}
     
 
 runCmd :: Host.Connection -> TVar World -> Text -> [Text] -> IO ()
@@ -233,6 +235,7 @@ worldCoordToPlayer (WorldPos (worldTopX, worldTopY)) (WorldPos (worldX, worldY))
    PlayerPos (worldX - worldTopX, -(worldY - worldTopY))
 
   
+{-! SECTION< 05_drawTilesForPlayer !-}
 drawTilesForPlayer :: World -> Map WorldPos Entity -> Map PlayerPos Tile
 drawTilesForPlayer world entityMap =
   let
@@ -273,8 +276,11 @@ drawTilesForPlayer world entityMap =
   where
     inView topX topY bottomX bottomY (WorldPos (x, y)) _ =
       x >= topX && x < bottomX && y > bottomY && y <= topY
+{-! SECTION> 05_drawTilesForPlayer !-}
 
 
+{-! SECTION< 05_getAllActors !-}
 getAllActors :: World -> [Actor]
 getAllActors world =
   world ^. wdPlayer ^. plActor : Map.elems (world ^. wdActors)
+{-! SECTION> 05_getAllActors !-}

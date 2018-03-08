@@ -4,6 +4,7 @@ module EntityType where
 
 import Protolude
 
+{-! SECTION< 05_entityType !-}
 data EntityType = Blank
                 | Door
                 | DoorClosed
@@ -13,3 +14,4 @@ data EntityType = Blank
                 | Snake
                 | Unknown
                 deriving (Show, Eq, Ord)
+{-! SECTION> 05_entityType !-}

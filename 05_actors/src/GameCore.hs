@@ -17,6 +17,7 @@ import           Control.Lens.TH (makeLenses)
 import qualified GameHost as Host
 import qualified EntityType as E
 
+{-! SECTION< 05_actor !-}
 data ActorClass = ClassPlayer
                 | ClassEnemy
                 deriving (Show, Eq)
@@ -29,18 +30,23 @@ data Actor = Actor { _acId :: !Aid
                    , _acWorldPos :: !WorldPos
                    , _acStdGen :: !Rnd.StdGen
                    }
+{-! SECTION> 05_actor !-}
 
+{-! SECTION< 05_player !-}
 data Player = Player { _plConn :: !Host.Connection
                      , _plActor :: !Actor
                      , _plScreenSize :: !(Int, Int)
                      , _plWorldTopLeft :: !WorldPos
                      }
+{-! SECTION> 05_player !-}
 
+{-! SECTION< 05_world !-}
 data World = World { _wdPlayer :: !Player
                    , _wdConfig :: !Config
                    , _wdMap :: !(Map WorldPos Entity)
                    , _wdActors :: !(Map Aid Actor)
                    }
+{-! SECTION> 05_world !-}
 
 newtype Config = Config { _cfgKeys :: Map Text Text
                         }
