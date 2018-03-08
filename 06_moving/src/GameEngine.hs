@@ -93,6 +93,7 @@ bootWorld conn screenSize mapData std =
         }
   where
     mkConfig =
+{-! SECTION< 06_keys !-}
       Config { _cfgKeys = Map.fromList [ ("up"      , "Move:up")
                                        , ("k"       , "Move:up")
                                        , ("down"    , "Move:down")
@@ -111,6 +112,7 @@ bootWorld conn screenSize mapData std =
                                        , ("pagedown", "Move:down-right")
                                        ]
              }
+{-! SECTION> 06_keys !-}
 
     mkPlayer =
       Player { _plConn = conn
@@ -148,6 +150,7 @@ runCmd conn worldV cmd cmdData =
           drawAndSend w
           sendLog conn "draw"
       
+{-! SECTION< 06_key_handle !-}
     "key" -> do
       -- Handle the key press
       atomically $ modifyTVar' worldV (\w -> runActions w $ handleKey cmdData)
@@ -155,6 +158,7 @@ runCmd conn worldV cmd cmdData =
       w2 <- atomically $ readTVar worldV
       -- Draw
       drawAndSend w2
+{-! SECTION> 06_key_handle !-}
 
     _ ->
       sendError conn $ "Unknown command: " <> cmd
@@ -302,6 +306,7 @@ getAllActors world =
   world ^. wdPlayer ^. plActor : Map.elems (world ^. wdActors)
 
 
+{-! SECTION< 06_handleKey !-}
 handleKey :: [Text] -> [RogueAction]
 handleKey (cmd:_) = 
   case cmd of
@@ -315,8 +320,10 @@ handleKey (cmd:_) =
     "Move:down-left"  -> [ActMovePlayer (-1, -1)]
     _                 -> []
 handleKey _ = []
+{-! SECTION> 06_handleKey !-}
 
 
+{-! SECTION< 06_runActions !-}
 runActions :: World -> [RogueAction] -> World
 runActions world actions =
   foldl' runAction world actions
@@ -326,4 +333,7 @@ runAction :: World -> RogueAction -> World
 runAction world action =
   case action of
     ActMovePlayer (dx, dy) ->
+{-! SECTION< 06_movePlayer !-}
       world & (wdPlayer . plActor . acWorldPos) %~ (\(WorldPos (x, y)) -> WorldPos (x + dx, y + dy))
+{-! SECTION> 06_movePlayer !-}
+{-! SECTION> 06_runActions !-}

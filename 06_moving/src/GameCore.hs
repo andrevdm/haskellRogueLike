@@ -59,7 +59,9 @@ data Entity = Entity { _enType :: !E.EntityType
 newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
 newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
 
+{-! SECTION< 06_rogueAction !-}
 newtype RogueAction = ActMovePlayer (Int, Int)
+{-! SECTION> 06_rogueAction !-}
 
 
 data UiMessage = UiMessage { umCmd :: !Text
