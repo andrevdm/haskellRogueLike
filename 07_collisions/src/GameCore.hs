@@ -42,9 +42,11 @@ data World = World { _wdPlayer :: !Player
                    , _wdActors :: !(Map Aid Actor)
                    }
 
+{-! SECTION< 07_config !-}
 data Config = Config { _cfgKeys :: !(Map Text Text)
                      , _cfgMinMaxBounds :: !(Int, Int, Int, Int) -- (minX, maxX, minY, maxY)
                     }
+{-! SECTION> 07_config !-}
 
 
 data Tile = Tile { _tlName :: !Text
@@ -55,7 +57,6 @@ data Tile = Tile { _tlName :: !Text
 data Entity = Entity { _enType :: !E.EntityType
                      , _enTile :: !Tile
                      , _enProps :: !(Map Text Text)
-                     , _enAttribs :: !(Map Text Int)
                      } deriving (Show, Eq, Ord)
 
 newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)

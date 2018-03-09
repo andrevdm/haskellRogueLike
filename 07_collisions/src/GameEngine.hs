@@ -110,7 +110,10 @@ bootWorld conn screenSize mapData std =
                                        , ("b"       , "Move:down-left")
                                        , ("pagedown", "Move:down-right")
                                        ]
+
+{-! SECTION< 07_minMax !-}
              , _cfgMinMaxBounds = (0, 30, -30, 0)
+{-! SECTION> 07_minMax !-}
              }
 
     mkPlayer =
@@ -323,29 +326,41 @@ runActions world actions =
   foldl' runAction world actions
 
 
+{-! SECTION< 07_runAction !-}
 runAction :: World -> RogueAction -> World
 runAction world action =
   case action of
     ActMovePlayer move  ->
       fromMaybe world $ tryMoveActor world (world ^. wdPlayer ^. plActor) move
+{-! SECTION> 07_runAction !-}
 
 
+{-! SECTION< 07_type_tryMoveActor !-}
+{-! SECTION< 07_tryMoveActor !-}
 tryMoveActor :: World -> Actor -> (Int, Int) -> Maybe World
+{-! SECTION> 07_type_tryMoveActor !-}
 tryMoveActor world actor (dx, dy) =
-  -- Get the world bounds
-  let (minX, maxX, minY, maxY) = world ^. wdConfig ^. cfgMinMaxBounds in
+  let
+    -- Get the world bounds
+    (minX, maxX, minY, maxY) = world ^. wdConfig ^. cfgMinMaxBounds
 
-  -- Actor's position
-  let (WorldPos wdPos) = actor ^. acWorldPos in
+    -- Actor's position
+    (WorldPos wdPos) = actor ^. acWorldPos 
 
-  -- Where the actor whats to move to, using bimap :: (a -> b) -> (c -> d) -> (a, c) -> (b, d)
-  let tryWorldTo@(tx, ty) = bimap (+ dx) (+ dy) wdPos in
-  let tryWorldTo' = WorldPos tryWorldTo in
+{-! SECTION< 07_tryWorldTo_tryMoveActor !-}
+    -- Where the actor whats to move to, using bimap :: (a -> b) -> (c -> d) -> (a, c) -> (b, d)
+    tryWorldTo@(tx, ty) = bimap (+ dx) (+ dy) wdPos 
+{-! SECTION> 07_tryWorldTo_tryMoveActor !-}
+    tryWorldTo' = WorldPos tryWorldTo 
+  in
 
+{-! SECTION< 07_offWorld_tryMoveActor !-}
   -- Is the actor trying to move out of the world?
   if tx < minX || ty < minY || tx >= maxX || ty >= maxY
   then Nothing
   else
+{-! SECTION> 07_offWorld_tryMoveActor !-}
+{-! SECTION< 07_collisions_tryMoveActor !-}
     let
       -- Entity at destination
       destEntity = (world ^. wdMap ^.at tryWorldTo') 
@@ -365,11 +380,15 @@ tryMoveActor world actor (dx, dy) =
         Just $ updateActor world movedActor
       else
         Nothing
+{-! SECTION> 07_collisions_tryMoveActor !-}
+{-! SECTION> 07_tryMoveActor !-}
 
 
+{-! SECTION< 07_updateActor !-}
 -- | Update either the player's actor, or one of the world actors
 updateActor :: World -> Actor -> World
 updateActor w actor =
   if w ^. wdPlayer ^. plActor ^. acId == (actor ^. acId)
   then w & (wdPlayer . plActor) .~ actor                         -- update the player's actor
   else w & wdActors %~ Map.adjust (const actor) (actor ^. acId)  -- update other actor, nop if aid not found
+{-! SECTION> 07_updateActor !-}
