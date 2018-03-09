@@ -334,15 +334,17 @@ runAction world action =
 
 tryMoveActor :: World -> Actor -> (Int, Int) -> Maybe World
 tryMoveActor world actor (dx, dy) =
-  -- Get the world bounds
-  let (minX, maxX, minY, maxY) = world ^. wdConfig ^. cfgMinMaxBounds in
+  let
+    -- Get the world bounds
+    (minX, maxX, minY, maxY) = world ^. wdConfig ^. cfgMinMaxBounds
 
-  -- Actor's position
-  let (WorldPos wdPos) = actor ^. acWorldPos in
+    -- Actor's position
+    (WorldPos wdPos) = actor ^. acWorldPos 
 
-  -- Where the actor whats to move to, using bimap :: (a -> b) -> (c -> d) -> (a, c) -> (b, d)
-  let tryWorldTo@(tx, ty) = bimap (+ dx) (+ dy) wdPos in
-  let tryWorldTo' = WorldPos tryWorldTo in
+    -- Where the actor whats to move to, using bimap :: (a -> b) -> (c -> d) -> (a, c) -> (b, d)
+    tryWorldTo@(tx, ty) = bimap (+ dx) (+ dy) wdPos 
+    tryWorldTo' = WorldPos tryWorldTo 
+  in
 
   -- Is the actor trying to move out of the world?
   if tx < minX || ty < minY || tx >= maxX || ty >= maxY
