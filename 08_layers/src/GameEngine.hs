@@ -207,6 +207,7 @@ parseScreenSize cmd = do
   pure (x, y)
 
 
+{-! SECTION< 08_drawAndSend !-}
 drawAndSend :: World -> IO ()
 drawAndSend world = do
   let layers = drawTilesForPlayer world (world ^. wdMap) 
@@ -220,6 +221,7 @@ drawAndSend world = do
   where
     mkDrawMapData :: (PlayerPos, Tile) -> (Int, Int, Int)
     mkDrawMapData (PlayerPos (x, y), tile) = (x, y, tile ^. tlId)
+{-! SECTION> 08_drawAndSend !-}
 
   
 loadWorld :: Map Text Entity -> Text -> Map WorldPos Entity
@@ -256,8 +258,10 @@ worldCoordToPlayer (WorldPos (worldTopX, worldTopY)) (WorldPos (worldX, worldY))
    PlayerPos (worldX - worldTopX, -(worldY - worldTopY))
 
   
+{-! SECTION< 08_drawTilesForPlayer !-}
 drawTilesForPlayer :: World -> Map WorldPos Entity -> [Map PlayerPos Tile]
 drawTilesForPlayer world entityMap =
+{-! SECTION< 08_layers_drawTilesForPlayer !-}
   let
     -- Entity base layer
     entityLayer = mkLayer entityMap
@@ -268,6 +272,7 @@ drawTilesForPlayer world entityMap =
     actorLayer = mkLayer visibleActorMap
   in
     [entityLayer, actorLayer]
+{-! SECTION> 08_layers_drawTilesForPlayer !-}
 
   where
     player = world ^. wdPlayer
@@ -298,7 +303,7 @@ drawTilesForPlayer world entityMap =
       in
       -- Get it with player positions
       Map.mapKeys (worldCoordToPlayer $ player ^. plWorldTopLeft) tileMap
-
+{-! SECTION> 08_drawTilesForPlayer !-}
 
 getAllActors :: World -> [Actor]
 getAllActors world =
