@@ -30,12 +30,14 @@ data Actor = Actor { _acId :: !Aid
                    , _acStdGen :: !Rnd.StdGen
                    }
 
+{-! SECTION< 09_player !-}
 data Player = Player { _plConn :: !Host.Connection
                      , _plActor :: !Actor
                      , _plScreenSize :: !(Int, Int)
                      , _plWorldTopLeft :: !WorldPos
                      , _plViewPortStyle :: !ViewPortStyle
                      }
+{-! SECTION> 09_player !-}
 
 data World = World { _wdPlayer :: !Player
                    , _wdConfig :: !Config
@@ -61,15 +63,19 @@ data Entity = Entity { _enType :: !E.EntityType
 newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
 newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
 
+{-! SECTION< 09_rogueAction !-}
 data RogueAction = ActMovePlayer (Int, Int)
                  | ActSetPlayerViewPortStyle ViewPortStyle
+{-! SECTION> 09_rogueAction !-}
 
+{-! SECTION< 09_viewPortStyle !-}
 data ViewPortStyle = ViewPortCentre
                    | ViewPortLock PlayerPos
                    | ViewPortScroll
                    | ViewPortSnapCentre
                    | ViewPortBorder Int
                    deriving (Show, Eq)
+{-! SECTION> 09_viewPortStyle !-}
 
 
 data UiMessage = UiMessage { umCmd :: !Text

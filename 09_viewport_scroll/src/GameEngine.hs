@@ -110,15 +110,18 @@ bootWorld conn screenSize mapData std =
                                        , ("b"       , "Move:down-left")
                                        , ("pagedown", "Move:down-right")
 
+{-! SECTION< 09_chords !-}
                                        , ("shift+v c", "Game:ViewPort:Centre")
                                        , ("shift+v s", "Game:ViewPort:Scroll")
                                        , ("shift+v p", "Game:ViewPort:Snap")
                                        , ("shift+v b", "Game:ViewPort:Border")
                                        , ("shift+v l", "Game:ViewPort:Lock")
+{-! SECTION> 09_chords !-}
                                        ]
              , _cfgMinMaxBounds = (-300, 300, -300, 300)
              }
 
+{-! SECTION< 09_mkPlayer !-}
     mkPlayer =
       Player { _plConn = conn
              , _plScreenSize = screenSize
@@ -126,6 +129,7 @@ bootWorld conn screenSize mapData std =
              , _plActor = mkPlayersActor
              , _plViewPortStyle = ViewPortBorder 2
              }
+{-! SECTION> 09_mkPlayer !-}
 
     mkPlayersActor =
       Actor { _acId = Aid "player"
@@ -327,11 +331,13 @@ handleKey world (cmd:_) =
     "Move:down-right" -> [ActMovePlayer ( 1, -1)]
     "Move:down-left"  -> [ActMovePlayer (-1, -1)]
 
+{-! SECTION< 09_handleKeys !-}
     "Game:ViewPort:Centre" -> [ActSetPlayerViewPortStyle ViewPortCentre]
     "Game:ViewPort:Scroll" -> [ActSetPlayerViewPortStyle ViewPortScroll]
     "Game:ViewPort:Snap"   -> [ActSetPlayerViewPortStyle ViewPortSnapCentre]
     "Game:ViewPort:Border" -> [ActSetPlayerViewPortStyle $ ViewPortBorder 2]
     "Game:ViewPort:Lock"   -> [ActSetPlayerViewPortStyle $ ViewPortLock (worldCoordToPlayer topLeft $ actor ^. acWorldPos)]
+{-! SECTION> 09_handleKeys !-}
 
     _ -> []
 handleKey _ _ = []
@@ -348,8 +354,10 @@ runAction world action =
     ActMovePlayer move  ->
       fromMaybe world $ tryMoveActor world (world ^. wdPlayer ^. plActor) move
 
+{-! SECTION< 09_runAction !-}
     ActSetPlayerViewPortStyle style ->
       world & (wdPlayer . plViewPortStyle) .~ style
+{-! SECTION> 09_runAction !-}
 
 
 tryMoveActor :: World -> Actor -> (Int, Int) -> Maybe World
@@ -399,27 +407,33 @@ updateActor w actor =
   else w & wdActors %~ Map.adjust (const actor) (actor ^. acId)  -- update other actor, nop if aid not found
 
 
+{-! SECTION< 09_updatePlayerViewport !-}
 -- | Update the player's view port
 updatePlayerViewport :: World -> World
 updatePlayerViewport w =
   let p = w ^. wdPlayer in
   w & wdPlayer .~ (p & plWorldTopLeft .~ calcViewPortTopLeft p)
+{-! SECTION> 09_updatePlayerViewport !-}
 
 
+{-! SECTION< 09_calcViewPortTopLeft !-}
 calcViewPortTopLeft :: Player -> WorldPos
 calcViewPortTopLeft player =
   let actor = player ^. plActor in
 
+{-! SECTION< 09_lock_calcViewPortTopLeft !-}
   case player ^. plViewPortStyle of
     -- These two styles put the player in the viewport, so no need to check
     ViewPortCentre -> centreOn (player ^. plScreenSize) (actor ^. acWorldPos)
     ViewPortLock focus -> focusOn focus $ actor ^. acWorldPos
+{-! SECTION> 09_lock_calcViewPortTopLeft !-}
 
     _ -> 
       let tl@(WorldPos (tX, tY)) = (player ^. plWorldTopLeft) in
       let sz@(width, height) = (player ^. plScreenSize) in
       let (outX, outY) = distanceOutOfViewPort sz tl (actor ^. acWorldPos) in
       
+{-! SECTION< 09_snap_border_calcViewPortTopLeft !-}
       case player ^. plViewPortStyle of
         ViewPortSnapCentre ->
           if outX /= 0 || outY /= 0
@@ -433,22 +447,27 @@ calcViewPortTopLeft player =
                                  (actor ^. acWorldPos)
           in
           WorldPos (tX + outX', tY + outY')
+{-! SECTION> 09_snap_border_calcViewPortTopLeft !-}
 
+{-! SECTION< 09_scroll_calcViewPortTopLeft !-}
         _ -> -- default to ViewPortScroll
           WorldPos (tX + outX, tY + outY)
+{-! SECTION> 09_scroll_calcViewPortTopLeft !-}
 
   where
+{-! SECTION< 09_centreOn_calcViewPortTopLeft !-}
     centreOn :: (Int, Int) -> WorldPos -> WorldPos
     centreOn (screenWidth, screenHeight) (WorldPos (wAtX, wAtY)) =
       let (sMidX, sMidY) = (screenWidth `div` 2, screenHeight `div` 2) in
       WorldPos (wAtX - sMidX, wAtY + sMidY)
     
-    
     focusOn :: PlayerPos -> WorldPos -> WorldPos
     focusOn (PlayerPos (focusX, focusY)) (WorldPos (atX, atY)) =
       WorldPos (atX - focusX, atY + focusY)
+{-! SECTION> 09_centreOn_calcViewPortTopLeft !-}
       
     
+{-! SECTION< 09_distanceOutOfViewPort_calcViewPortTopLeft !-}
     distanceOutOfViewPort :: (Int, Int) -> WorldPos -> WorldPos -> (Int, Int)
     distanceOutOfViewPort (screenWidth, screenHeight) (WorldPos (topX, topY)) (WorldPos (atX, atY)) =
       let
@@ -461,3 +480,5 @@ calcViewPortTopLeft player =
                | otherwise -> 0
       in
       (x, y)
+{-! SECTION> 09_distanceOutOfViewPort_calcViewPortTopLeft !-}
+{-! SECTION> 09_calcViewPortTopLeft !-}
