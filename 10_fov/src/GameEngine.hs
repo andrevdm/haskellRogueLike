@@ -296,13 +296,13 @@ drawTilesForPlayer world entityMap =
   where
     player = world ^. wdPlayer
     
-    -- | Top left of player's grid
+    -- Top left of player's grid
     (WorldPos (topX, topY)) = player ^. plWorldTopLeft 
 
-    -- | Players screen/grid dimensions
+    -- Players screen/grid dimensions
     (screenX, screenY) = player ^. plScreenSize 
 
-    -- | Bottom right corner
+    -- Bottom right corner
     (bottomX, bottomY) = (topX + screenX, topY - screenY) 
 
     isNotDarkness :: PlayerPos -> Map PlayerPos Tile -> Bool
