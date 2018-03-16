@@ -502,6 +502,7 @@ calcViewPortTopLeft player =
       (x, y)
 
 
+{-! SECTION< 10_calcFov !-}
 -- | Calculate the field of view from a position
 calcFov :: Int -> (WorldPos -> Bool) -> WorldPos -> [(WorldPos, [WorldPos])]
 calcFov fovDistance isEntityTransparent fromPos'@(WorldPos fromPos) =
@@ -516,8 +517,10 @@ calcFov fovDistance isEntityTransparent fromPos'@(WorldPos fromPos) =
       let isTransparentOrStart p = p == fromPos' || isEntityTransparent p in
       let (m, r) = Lst.span isTransparentOrStart line in
       (toPos', m <> Lst.take 1 r)
+{-! SECTION> 10_calcFov !-}
 
 
+{-! SECTION< 10_boundingPoints !-}
 -- | Get the bounds for a fov distance
 boundingPoints :: Int -> WorldPos -> [WorldPos]
 boundingPoints distance (WorldPos (atx, aty)) =
@@ -526,8 +529,10 @@ boundingPoints distance (WorldPos (atx, aty)) =
     [WorldPos (atx - distance, aty - distance + d) | d <- [0..distance * 2]] <>
     [WorldPos (atx - distance + d, aty + distance) | d <- [0..distance * 2]] <>
     [WorldPos (atx + distance, aty - distance + d) | d <- [0..distance * 2]]
+{-! SECTION> 10_boundingPoints !-}
               
 
+{-! SECTION< 10_bline !-}
 -- | Bresenham's algorithm
 -- | https://wiki.haskell.org/Bresenham%27s_line_drawing_algorithm
 bline :: (Int, Int) -> (Int, Int) -> [(Int, Int)]
@@ -555,13 +560,16 @@ bline pa@(xa, ya) pb@(xb, yb) =
           (newY, newError) = if (2 * tempError) >= deltax
                             then (yTemp + ystep, tempError - deltax)
                             else (yTemp, tempError)
+{-! SECTION> 10_bline !-}
 
   
+{-! SECTION< 10_isTransparent !-}
 isTransparent :: Map WorldPos Entity -> WorldPos -> Bool
 isTransparent wmap pos =
   case Map.lookup pos wmap of
     Nothing -> True
     Just e -> (e ^. enType) /= E.Wall
+{-! SECTION> 10_isTransparent !-}
 
   
 darknessFovOverlay :: Player -> Actor -> Map PlayerPos Tile
@@ -581,6 +589,8 @@ darknessFovOverlay player actor =
   foldr Map.delete blackBg lightAt
 
   
+{-! SECTION< 10_flatFov !-}
 flatFov :: Maybe [(WorldPos, [WorldPos])] -> [WorldPos]
 flatFov Nothing = []
 flatFov (Just fov) = Lst.nub . Lst.concat $ snd <$> fov
+{-! SECTION> 10_flatFov !-}

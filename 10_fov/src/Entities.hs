@@ -22,7 +22,9 @@ loadTexts :: Map Text Entity
            , (E.Player    , ( 8,  3), Nothing)
            , (E.Bug       , (25,  3), Nothing)
            , (E.Snake     , (38,  4), Nothing)
+{-! SECTION< 10_dark !-}
            , (E.Dark      , (43, 11), Nothing)
+{-! SECTION> 10_dark !-}
            ]
   in
   let mkData (typ, pos@(x, y), l) (tiles', entities', loads') =
