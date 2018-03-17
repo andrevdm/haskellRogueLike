@@ -1,5 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
+{-! SECTION< 12_boundedInt !-}
 module BoundedInt ( BInt
                   , new
                   , update
@@ -35,3 +36,4 @@ getMax (BInt (m, _)) =
 update :: (Int -> Int) -> BInt -> BInt
 update fn (BInt (maxBound, v)) =
   BInt (maxBound, max 0 . min maxBound $ fn v)
+{-! SECTION> 12_boundedInt !-}
