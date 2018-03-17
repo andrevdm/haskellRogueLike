@@ -62,7 +62,7 @@ data World = World { _wdPlayer :: !Player
                    , _wdConfig :: !Config
                    , _wdMap :: !(Map WorldPos Entity)
                    , _wdActors :: !(Map Aid Actor)
-                   , _wdMinMoveEnergy :: !Int   -- ^ min energy required before any more, regardless of cost, can be attampted
+                   , _wdMinMoveEnergy :: !Int   -- ^ min energy required before any more, regardless of cost, can be attempted
                    , _wdEnergyIncrements :: !Int -- ^ amount of energy that is added per game loop
                    , _wdUtilBrainAnnotations :: ![(E.EntityType, [UtilAnnotationEntry], [UtilAnnotationEntry])]
                    }
