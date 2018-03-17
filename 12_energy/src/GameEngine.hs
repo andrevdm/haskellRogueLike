@@ -92,8 +92,10 @@ bootWorld conn screenSize mapData std =
                , _wdActors = Map.fromList [ (bug ^. acId, bug)
                                           , (snake ^. acId, snake)
                                           ]
+{-! SECTION< 12_worldSetup !-}
                , _wdMinMoveEnergy = 100
                , _wdEnergyIncrements = 20
+{-! SECTION> 12_worldSetup !-}
                }
   in
   -- Calculate the actors fov
@@ -145,9 +147,11 @@ bootWorld conn screenSize mapData std =
             , _acFovDistance = 3
             , _acFov = Nothing
             , _acFovHistory = Set.empty
+{-! SECTION< 12_mkPlayer !-}
             , _acSkipMove = False
             , _acMoveEnergyCost = 100
             , _acEnergy = B.new 200 100
+{-! SECTION> 12_mkPlayer !-}
             }
 
     mkEnemyActor aid e (x, y) =
@@ -159,9 +163,11 @@ bootWorld conn screenSize mapData std =
             , _acFovDistance = 2
             , _acFov = Nothing
             , _acFovHistory = Set.empty
+{-! SECTION< 12_mkEnemy !-}
             , _acSkipMove = False
             , _acMoveEnergyCost = 150
             , _acEnergy = B.new 180 100
+{-! SECTION> 12_mkEnemy !-}
             }
     
 
@@ -452,12 +458,14 @@ updateActor w actor =
   else w & wdActors %~ Map.adjust (const actor) (actor ^. acId)  -- update other actor, nop if aid not found
 
   
+{-! SECTION< 12_updateActorById !-}
 -- | Update either the player's actor, or one of the world actors
 updateActorById :: World -> Aid -> (Actor -> Actor) -> World
 updateActorById w id update =
   if w ^. wdPlayer ^. plActor ^. acId == id
   then w & (wdPlayer . plActor) .~ update (w ^. wdPlayer ^. plActor) -- update the player's actor
   else w & wdActors %~ Map.adjust update id                          -- update other actor, nop if aid not found
+{-! SECTION> 12_updateActorById !-}
 
   
 -- | Update all actors, including the player's actor
@@ -618,6 +626,7 @@ flatFov Nothing = []
 flatFov (Just fov) = Lst.nub . Lst.concat $ snd <$> fov
 
   
+{-! SECTION< 12_energyComment !-}
 -- | Manages the core logic of the energy system.
 --    
 --       [key press] ------> is zero cost move?
@@ -670,6 +679,7 @@ flatFov (Just fov) = Lst.nub . Lst.concat $ snd <$> fov
 --                                     (exit)
 --  
 --  
+{-! SECTION> 12_energyComment !-}
 playerMoving :: Int -> World -> World -> World
 playerMoving pendingCost pendingWorld oldWorld = 
   let playerAttemptedMoveWorld = 

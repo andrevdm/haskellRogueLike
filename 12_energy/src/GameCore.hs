@@ -32,9 +32,11 @@ data Actor = Actor { _acId :: !Aid
                    , _acFov :: !(Maybe [(WorldPos, [WorldPos])])
                    , _acFovHistory :: !(Set WorldPos)
                    , _acFovDistance :: !Int
+{-! SECTION< 12_actor !-}
                    , _acEnergy :: !B.BInt -- ^ available energy, bounded
                    , _acMoveEnergyCost :: !Int
                    , _acSkipMove :: !Bool
+{-! SECTION> 12_actor !-}
                    }
 
 data Player = Player { _plConn :: !Host.Connection
@@ -49,8 +51,10 @@ data World = World { _wdPlayer :: !Player
                    , _wdConfig :: !Config
                    , _wdMap :: !(Map WorldPos Entity)
                    , _wdActors :: !(Map Aid Actor)
+{-! SECTION< 12_world !-}
                    , _wdMinMoveEnergy :: !Int   -- ^ min energy required before any more, regardless of cost, can be attempted
                    , _wdEnergyIncrements :: !Int -- ^ amount of energy that is added per game loop
+{-! SECTION> 12_world !-}
                    }
 
 data Config = Config { _cfgKeys :: !(Map Text Text)
