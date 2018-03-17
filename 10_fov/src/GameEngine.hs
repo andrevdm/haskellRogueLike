@@ -77,6 +77,7 @@ initialiseConnection conn cmdData mapData std =
       Right $ bootWorld conn (width, height) mapData std
 
 
+{-! SECTION< 10_bootWorld !-}
 bootWorld :: Host.Connection -> (Int, Int) -> Text -> Rnd.StdGen -> World
 bootWorld conn screenSize mapData std = 
   let
@@ -95,6 +96,7 @@ bootWorld conn screenSize mapData std =
 
   -- Calculate the actors fov
   updateAllActors w1 updateActorFov
+{-! SECTION> 10_bootWorld !-}
 
   where
     mkConfig =
@@ -272,26 +274,33 @@ worldCoordToPlayer (WorldPos (worldTopX, worldTopY)) (WorldPos (worldX, worldY))
    PlayerPos (worldX - worldTopX, -(worldY - worldTopY))
 
   
+{-! SECTION< 10_drawTilesForPlayer !-}
 drawTilesForPlayer :: World -> Map WorldPos Entity -> [Map PlayerPos Tile]
 drawTilesForPlayer world entityMap =
   let
+{-! SECTION< 10_baseLayer_drawTilesForPlayer !-}
     -- Entity base layer
     entities = mkLayer entityMap
     -- Darkness
     darknessOverlay = darknessFovOverlay (world ^. wdPlayer) (world ^. wdPlayer ^. plActor)
     -- Darkness hides entity
     baseLayer = Map.union darknessOverlay entities
+{-! SECTION> 10_baseLayer_drawTilesForPlayer !-}
 
+{-! SECTION< 10_actors_drawTilesForPlayer !-}
     -- Actor layer on top
     actorMap = Map.fromList $ (\a -> (a ^. acWorldPos, a ^. acEntity)) <$> getAllActors world
     inViewActors = Map.filterWithKey inView actorMap
     actorLayer = mkLayer inViewActors
     visibleActorLayer = Map.filterWithKey (\wp _ -> isNotDarkness wp baseLayer) actorLayer
+{-! SECTION> 10_actors_drawTilesForPlayer !-}
+{-! SECTION< 10_layers_drawTilesForPlayer !-}
   in
     -- Layers
     -- 0: Entities (with darkness overlay)
     -- 1: Actors
     [baseLayer, visibleActorLayer]
+{-! SECTION> 10_layers_drawTilesForPlayer !-}
 
   where
     player = world ^. wdPlayer
@@ -305,11 +314,13 @@ drawTilesForPlayer world entityMap =
     -- Bottom right corner
     (bottomX, bottomY) = (topX + screenX, topY - screenY) 
 
+{-! SECTION< 10_isNotDarkness_drawTilesForPlayer !-}
     isNotDarkness :: PlayerPos -> Map PlayerPos Tile -> Bool
     isNotDarkness wp ts =
       case Map.lookup wp ts of
         Nothing -> True
         Just t -> t ^. tlId /= E.getTile E.Dark ^. tlId
+{-! SECTION> 10_isNotDarkness_drawTilesForPlayer !-}
   
     inView (WorldPos (x, y)) _ =
       x >= topX && x < bottomX && y > bottomY && y <= topY
@@ -328,6 +339,7 @@ drawTilesForPlayer world entityMap =
       in
       -- Get it with player positions
       Map.mapKeys (worldCoordToPlayer $ player ^. plWorldTopLeft) tileMap
+{-! SECTION> 10_drawTilesForPlayer !-}
 
 
 getAllActors :: World -> [Actor]
@@ -406,6 +418,7 @@ tryMoveActor world actor (dx, dy) =
                   ([], Nothing) -> True
                   _ -> False
       in
+{-! SECTION< 10_tryMoveActor !-}
       if canMove
       then
         let
@@ -416,10 +429,13 @@ tryMoveActor world actor (dx, dy) =
           Just $ updateActor w2 (updateActorFov w2 pa)
       else
         Nothing
+{-! SECTION> 10_tryMoveActor !-}
 
+{-! SECTION< 10_updateActorFov !-}
 updateActorFov :: World -> Actor -> Actor
 updateActorFov w a =
   a & acFov .~ Just (calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos))
+{-! SECTION> 10_updateActorFov !-}
 
 
 -- | Update either the player's actor, or one of the world actors
@@ -430,12 +446,14 @@ updateActor w actor =
   else w & wdActors %~ Map.adjust (const actor) (actor ^. acId)  -- update other actor, nop if aid not found
 
   
+{-! SECTION< 10_updateAllActors !-}
 -- | Update all actors, including the player's actor
 updateAllActors :: World -> (World -> Actor -> Actor) -> World
 updateAllActors w fn =
   let w2 = w & (wdPlayer . plActor) %~ fn w in
   let w3 = w2 & wdActors %~ fmap (fn w2) in
   w3
+{-! SECTION> 10_updateAllActors !-}
 
 
 -- | Update the player's view port
@@ -572,6 +590,7 @@ isTransparent wmap pos =
 {-! SECTION> 10_isTransparent !-}
 
   
+{-! SECTION< 10_darknessFovOverlay !-}
 darknessFovOverlay :: Player -> Actor -> Map PlayerPos Tile
 darknessFovOverlay player actor =
   let
@@ -587,6 +606,7 @@ darknessFovOverlay player actor =
   in
   -- Remove the darkness overlay at any position that is to be lit
   foldr Map.delete blackBg lightAt
+{-! SECTION> 10_darknessFovOverlay !-}
 
   
 {-! SECTION< 10_flatFov !-}
