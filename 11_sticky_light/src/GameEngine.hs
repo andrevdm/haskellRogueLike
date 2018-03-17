@@ -419,12 +419,14 @@ tryMoveActor world actor (dx, dy) =
       else
         Nothing
 
+{-! SECTION< 11_updateActorFov !-}
 updateActorFov :: World -> Actor -> Actor
 updateActorFov w a =
  -- Calculate field of view
  let fov = calcFov (a ^. acFovDistance) (isTransparent $ w ^. wdMap) (a ^. acWorldPos) in
  a & acFov .~ Just fov
    & acFovHistory %~ Set.union (Set.fromList $ flatFov (Just fov))
+{-! SECTION> 11_updateActorFov !-}
 
 
 -- | Update either the player's actor, or one of the world actors
@@ -569,6 +571,7 @@ isTransparent wmap pos =
     Just e -> (e ^. enType) /= E.Wall
 
   
+{-! SECTION< 11_darknessFovOverlay !-}
 darknessFovOverlay :: Player -> Actor -> Map PlayerPos Tile
 darknessFovOverlay player actor =
   let
@@ -586,6 +589,7 @@ darknessFovOverlay player actor =
   -- Remove the darkness overlay at any position that is to be lit
   --  I.e. any position in the field of view, or previously in the field of view
   foldr Map.delete blackBg $ lightAt <> seen
+{-! SECTION> 11_darknessFovOverlay !-}
 
   
 flatFov :: Maybe [(WorldPos, [WorldPos])] -> [WorldPos]

@@ -29,7 +29,9 @@ data Actor = Actor { _acId :: !Aid
                    , _acWorldPos :: !WorldPos
                    , _acStdGen :: !Rnd.StdGen
                    , _acFov :: !(Maybe [(WorldPos, [WorldPos])])
+{-! SECTION< 11_fovHistory !-}
                    , _acFovHistory :: !(Set WorldPos)
+{-! SECTION> 11_fovHistory !-}
                    , _acFovDistance :: !Int
                    }
 
