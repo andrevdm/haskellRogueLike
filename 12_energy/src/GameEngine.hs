@@ -183,6 +183,7 @@ runCmd conn worldV cmd cmdData =
           drawAndSend w
           sendLog conn "draw"
       
+{-! SECTION< 12_key_runCmd !-}
     "key" -> do
       -- Handle the key press
       atomically $ modifyTVar' worldV (\w ->
@@ -196,6 +197,7 @@ runCmd conn worldV cmd cmdData =
       w2 <- atomically $ readTVar worldV
       -- Draw
       drawAndSend w2
+{-! SECTION> 12_key_runCmd !-}
 
     _ ->
       sendError conn $ "Unknown command: " <> cmd
@@ -679,16 +681,19 @@ flatFov (Just fov) = Lst.nub . Lst.concat $ snd <$> fov
 --                                     (exit)
 --  
 --  
-{-! SECTION> 12_energyComment !-}
 playerMoving :: Int -> World -> World -> World
 playerMoving pendingCost pendingWorld oldWorld = 
+{-! SECTION> 12_energyComment !-}
+{-! SECTION< 12_step1_playerMoving !-}
   let playerAttemptedMoveWorld = 
         Right oldWorld
           >>= checkIfNonMove
           >>= checkIfPlayerHasMinEnergy
           >>= runPendingIfPlayerHasEnergy
           >>= stopIfPlayerCanStillMove
+{-! SECTION> 12_step1_playerMoving !-}
   in
+{-! SECTION< 12_step2_playerMoving !-}
   case playerAttemptedMoveWorld of
     Left w -> w -- Left means stop 
     Right w ->  -- Right means continue with other actors
@@ -697,8 +702,10 @@ playerMoving pendingCost pendingWorld oldWorld =
       & runNonPlayerActorLoop
       & restoreSkipTurnEnergy
       & disableSkip
+{-! SECTION> 12_step2_playerMoving !-}
   
   where
+{-! SECTION< 12_top_playerMoving !-}
     checkIfNonMove w =
       -- If the cost is zero/negative then this is not an actual move
       --  Apply the pending action and continue
@@ -730,7 +737,9 @@ playerMoving pendingCost pendingWorld oldWorld =
         | skipMove -> Right w -- The player elected to skip a move, continue with others
         | hasEnergy -> Left w -- The player has energy, its still their turn
         | otherwise -> Right w -- continue
+{-! SECTION> 12_top_playerMoving !-}
 
+{-! SECTION< 12_runNonPlayerActorLoop_playerMoving !-}
     runNonPlayerActorLoop w =
       if B.get (w ^. wdPlayer ^. plActor ^. acEnergy) >= w ^. wdMinMoveEnergy
       then
@@ -743,7 +752,9 @@ playerMoving pendingCost pendingWorld oldWorld =
           addEnergy _ a = a & acEnergy %~ B.update ((w' ^. wdEnergyIncrements) +)
         in
         runNonPlayerActorLoop $ updateAllActors w' addEnergy
+{-! SECTION> 12_runNonPlayerActorLoop_playerMoving !-}
 
+{-! SECTION< 12_moveAllNonPlayers_playerMoving !-}
     moveAllNonPlayers w =
       let
         -- Random directions the actors could move in (no diagonal moves)
@@ -780,7 +791,9 @@ playerMoving pendingCost pendingWorld oldWorld =
       else
         -- Give actors that are able to move a chance to move
         foldr mv w actorsThatCanMove
+{-! SECTION> 12_moveAllNonPlayers_playerMoving !-}
       
+{-! SECTION< 12_storeSkipTurnEnergy_playerMoving !-}
     storeSkipTurnEnergy w =
       if w ^. wdPlayer ^. plActor ^. acSkipMove
       then
@@ -790,7 +803,9 @@ playerMoving pendingCost pendingWorld oldWorld =
           & (wdPlayer . plActor . acEnergy) %~ B.set 0
       else
         w
+{-! SECTION> 12_storeSkipTurnEnergy_playerMoving !-}
       
+{-! SECTION< 12_restoreSkipTurnEnergy_playerMoving !-}
     restoreSkipTurnEnergy w =
       if w ^. wdPlayer ^. plActor ^. acSkipMove
       then
@@ -798,12 +813,17 @@ playerMoving pendingCost pendingWorld oldWorld =
         w & (wdPlayer . plActor . acEnergy) %~ B.update ((w ^. wdPlayer ^. plPendingEnergy) +)
       else
         w
+{-! SECTION> 12_restoreSkipTurnEnergy_playerMoving !-}
       
+{-! SECTION< 12_disableSkip_playerMoving !-}
     disableSkip w =
       updateAllActors w (\_ a -> a & acSkipMove .~ False)
+{-! SECTION> 12_disableSkip_playerMoving !-}
 
 
+{-! SECTION< 12_randomElement !-}
 randomElement :: Rnd.StdGen -> [a] -> (Maybe a, Rnd.StdGen)
 randomElement g as =
   let (i, next) = Rnd.randomR (0, length as - 1) g in
   (atMay as i, next)
+{-! SECTION> 12_randomElement !-}
