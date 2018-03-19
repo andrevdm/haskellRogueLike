@@ -96,20 +96,28 @@ data ViewPortStyle = ViewPortCentre
 ----------------------------------------------------------------------------------------
 -- Utility brain types
 ----------------------------------------------------------------------------------------
+{-! SECTION< 13_path !-}
 newtype Path = Path [WorldPos] deriving (Show)
+{-! SECTION> 13_path !-}
 
+{-! SECTION< 13_pathTo !-}
 data PathTo = PathToEntity Path Entity WorldPos
             | PathToActor Path Actor WorldPos
             | PathToPlayer Path Player WorldPos
+{-! SECTION> 13_pathTo !-}
 
+{-! SECTION< 13_impulse !-}
 data Impulse = ImpMoveTowards Path
              | ImpMoveRandom
+{-! SECTION> 13_impulse !-}
 
+{-! SECTION< 13_disposition !-}
 data Disposition = Disposition { _dsSmitten :: Float
                                , _dsWanderlust :: Float
                                , _dsWanderlustToExits :: Float
                                , _dsSmittenWith :: [E.EntityType]
                                } 
+{-! SECTION> 13_disposition !-}
 ----------------------------------------------------------------------------------------
 
 
