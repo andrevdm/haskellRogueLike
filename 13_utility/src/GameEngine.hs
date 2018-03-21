@@ -751,6 +751,7 @@ playerMoving pendingCost pendingWorld oldWorld =
         in
         runNonPlayerActorLoop $ updateAllActors w' addEnergy
 
+{-! SECTION< 13_moveAllNonPlayers !-}
     moveAllNonPlayers w =
       let mv aOrig wOrig =
             let
@@ -778,6 +779,7 @@ playerMoving pendingCost pendingWorld oldWorld =
       let actorsThatCanMove = filter
                                 (\a -> B.get (a ^. acEnergy) >= (w ^. wdMinMoveEnergy) && not (a ^. acSkipMove))
                                 (Map.elems $ w ^. wdActors)
+{-! SECTION> 13_moveAllNonPlayers !-}
       in
       -- Are the any actors that could still move?
       if null actorsThatCanMove
@@ -810,6 +812,7 @@ playerMoving pendingCost pendingWorld oldWorld =
       updateAllActors w (\_ a -> a & acSkipMove .~ False)
 
   
+{-! SECTION< 13_actOnImpulse !-}
 actOnImpulse :: Int -> World -> Actor -> Impulse -> World
 actOnImpulse cost w actorIfMoved impulse =
   let (dx, dy, nextStdGen) =
@@ -846,6 +849,7 @@ actOnImpulse cost w actorIfMoved impulse =
                                     (actorIfMoved ^. acId)
   else
     w & wdActors %~ Map.adjust (\a' -> a' & acStdGen .~ nextStdGen) (actorIfMoved ^. acId)
+{-! SECTION> 13_actOnImpulse !-}
 
 
 randomElement :: Rnd.StdGen -> [a] -> (Maybe a, Rnd.StdGen)
@@ -854,6 +858,7 @@ randomElement g as =
   (atMay as i, next)
 
   
+{-! SECTION< 13_findPathToAllInFov !-}
 findPathToAllInFov :: World -> Actor -> [PathTo]
 findPathToAllInFov w a =
   case a ^. acFov of
@@ -894,3 +899,4 @@ addActorsToMap w =
     (\a g -> Map.insert (a ^. acWorldPos) (a ^. acEntity) g)
     (w ^. wdMap)
     (getAllActors w)
+{-! SECTION> 13_findPathToAllInFov !-}
