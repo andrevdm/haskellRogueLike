@@ -24,8 +24,10 @@ import           GameCore
 import qualified EntityType as E
 
 
+{-! SECTION< 14_telld !-}
 telld :: MonadWriter (DLst.DList a) m => a -> m ()
 telld t = tell (DLst.singleton t)
+{-! SECTION> 14_telld !-}
 
 path :: PathTo -> Path
 path (PathToEntity p _ _) = p
@@ -66,6 +68,7 @@ selectTopUtility rs = do
 -- | See the docs on acUtilities
 -- | Mainly that the world is threaded through utilities and any updates are kept even if no/other utilities are selected
 -- | The actor in the results are speculative and only the actor for the selected utility gets used
+{-! SECTION< 14_assessUtilities !-}
 assessUtilities :: [PathTo] -> World -> Actor -> UtilAnnotator ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
 assessUtilities paths world actor = do
   (rs, wNext) <- foldM assess ([], world) (actor ^. acUtilities)
@@ -77,6 +80,7 @@ assessUtilities paths world actor = do
       let a = fromMaybe actor $ w ^. wdActors ^.at (actor ^. acId) 
       (rs, wNext) <- u w a paths
       pure (hist <> rs, wNext)
+{-! SECTION> 14_assessUtilities !-}
 
 
 rankUtility :: [(Float, Actor, Impulse, Text, Maybe PathTo)] -> UtilAnnotator [(Float, Actor, Impulse, Text, Maybe PathTo)]
@@ -143,6 +147,7 @@ utilityOfWanderToExit world actor allPaths = do
   pure ((\(p, score) -> (score, actor, ImpMoveTowards (path p), "wander to exit", Just p)) <$> clampedResults, world)
 
   
+{-! SECTION< 14_infatuation !-}
 utilityOfInfatuation :: World -> Actor -> [PathTo] -> UtilAnnotator ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
 utilityOfInfatuation world actor allPaths = do
   telld . UeAt $ "Infatuation: " <> show (length allPaths) -- debugShowPathTos allPaths --show (actor ^. acDisposition ^. dsSmitten)
@@ -155,6 +160,7 @@ utilityOfInfatuation world actor allPaths = do
   telld . UeNote $ "infatuation: " <> show r2
   
   pure ((\(p, score) -> (score, actor, ImpMoveTowards (path p), "infatuation", Just p)) <$> clampedResults, world)
+{-! SECTION> 14_infatuation !-}
 
 
 moveTowardsUtil :: [E.EntityType] -> (Float -> Float) -> [PathTo] -> Actor -> [(PathTo, Float)]

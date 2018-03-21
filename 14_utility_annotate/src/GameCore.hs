@@ -26,7 +26,9 @@ data ActorClass = ClassPlayer
                 deriving (Show, Eq)
 
 newtype Aid = Aid Text deriving (Show, Eq, Ord)
+{-! SECTION< 14_utilAnnotator !-}
 type UtilAnnotator m = Writer (DList UtilAnnotationEntry) m
+{-! SECTION> 14_utilAnnotator !-}
 
 data Actor = Actor { _acId :: !Aid
                    , _acClass :: !ActorClass
@@ -44,7 +46,9 @@ data Actor = Actor { _acId :: !Aid
                    --    Note that the world is threaded through the utilities and can be updated (i.e. in the ([], World) result)
                    --    The array of results has an updated actor and a score. These are speculative, and are only applied
                    --    if that utility is selected. The world updates are kept even if nothing is selected
+{-! SECTION< 14_actor_utils !-}
                    , _acUtilities :: ![World -> Actor -> [PathTo] -> UtilAnnotator ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)]
+{-! SECTION> 14_actor_utils !-}
                    
                    -- | The actor's disposition - the values that define the actors personality
                    , _acDisposition :: !Disposition
@@ -64,7 +68,9 @@ data World = World { _wdPlayer :: !Player
                    , _wdActors :: !(Map Aid Actor)
                    , _wdMinMoveEnergy :: !Int   -- ^ min energy required before any more, regardless of cost, can be attempted
                    , _wdEnergyIncrements :: !Int -- ^ amount of energy that is added per game loop
+{-! SECTION< 14_world_annotations !-}
                    , _wdUtilBrainAnnotations :: ![(E.EntityType, [UtilAnnotationEntry], [UtilAnnotationEntry])]
+{-! SECTION> 14_world_annotations !-}
                    }
 
 data Config = Config { _cfgKeys :: !(Map Text Text)
@@ -117,12 +123,14 @@ data Disposition = Disposition { _dsSmitten :: Float
                                , _dsSmittenWith :: [E.EntityType]
                                } deriving (Show)
 
+{-! SECTION< 14_utilAnnotationEntry !-}
 data UtilAnnotationEntry = UeAt Text
                          | UeSelectTopNone Text
                          | UeSelectTopAbove Float 
                          | UeSelectTopOne Float Text Impulse Text
                          | UeNote Text
                          deriving (Show)
+{-! SECTION> 14_utilAnnotationEntry !-}
 ----------------------------------------------------------------------------------------
 
 

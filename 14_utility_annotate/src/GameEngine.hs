@@ -212,6 +212,7 @@ runCmd conn worldV cmd cmdData =
       -- Handle the annotations
       -- This is not terribly pretty as its doing a select for update, but its good enough for debugging
       -- the annotation code can be removed once everything is working
+{-! SECTION< 14_printAnnotations !-}
       let annotations = w2 ^. wdUtilBrainAnnotations 
       atomically $ modifyTVar' worldV (\w -> w & wdUtilBrainAnnotations .~ [])
       printAnnotations annotations
@@ -253,6 +254,7 @@ runCmd conn worldV cmd cmdData =
         UeSelectTopAbove f  -> "    Top above: " <> showF f
         UeSelectTopOne val n i d -> "    Select top one: " <> n <> ", impulse=" <> show i <> ", score=" <> showF val <> "," <> d
         UeNote n -> "    Note: " <> n
+{-! SECTION> 14_printAnnotations !-}
 
   
 sendLog :: Host.Connection -> Text -> IO ()
@@ -791,12 +793,15 @@ playerMoving pendingCost pendingWorld oldWorld =
         in
         runNonPlayerActorLoop $ updateAllActors w' addEnergy
 
+{-! SECTION< 14_moveAllNonPlayers_top !-}
     moveAllNonPlayers w =
       let mv aOrig wOrig =
             let
               inFov = findPathToAllInFov wOrig aOrig 
               ((utilities, wNext), annAssess) = runWriter $ UB.assessUtilities inFov wOrig aOrig 
               (topUtil, annTop) = runWriter $ UB.selectTopUtility utilities
+{-! SECTION> 14_moveAllNonPlayers_top !-}
+{-! SECTION< 14_moveAllNonPlayers_addAnn !-}
               annotation = (aOrig ^. acEntity ^. enType, DLst.toList annAssess, DLst.toList annTop)
               addAnn w' = w' & wdUtilBrainAnnotations %~ (annotation :)
             in
@@ -816,6 +821,7 @@ playerMoving pendingCost pendingWorld oldWorld =
                   wNext & wdActors %~ Map.insert (aOrig ^. acId) (aOrig & acSkipMove .~ True)
                 else
                   actOnImpulse cost (addAnn wNext) actorIfMoved action
+{-! SECTION> 14_moveAllNonPlayers_addAnn !-}
       in
 
       let actorsThatCanMove = filter
