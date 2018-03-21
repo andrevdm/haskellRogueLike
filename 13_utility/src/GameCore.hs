@@ -36,6 +36,7 @@ data Actor = Actor { _acId :: !Aid
                    , _acMoveEnergyCost :: !Int
                    , _acSkipMove :: !Bool
 
+{-! SECTION< 13_actor !-}
                    -- | List of utilities in order of execution
                    --    Note that the world is threaded through the utilities and can be updated (i.e. in the ([], World) result)
                    --    The array of results has an updated actor and a score. These are speculative, and are only applied
@@ -44,6 +45,7 @@ data Actor = Actor { _acId :: !Aid
                    
                    -- | The actor's disposition - the values that define the actors personality
                    , _acDisposition :: !Disposition
+{-! SECTION> 13_actor !-}
                    }
 
 data Player = Player { _plConn :: !Host.Connection

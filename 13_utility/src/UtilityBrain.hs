@@ -1,3 +1,4 @@
+{-! SECTION< 13_utilityBrain !-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -20,12 +21,16 @@ import           Control.Lens
 
 import           GameCore
 import qualified EntityType as E
+{-! SECTION> 13_utilityBrain !-}
 
+{-! SECTION< 13_path !-}
 path :: PathTo -> Path
 path (PathToEntity p _ _) = p
 path (PathToActor p _ _) = p
 path (PathToPlayer p _ _) = p
+{-! SECTION> 13_path !-}
 
+{-! SECTION< 13_selectTopUtility !-}
 selectTopUtility :: [(Float, Actor, Impulse, Text, Maybe PathTo)]
                  -> Maybe (Float, Actor, Impulse, Text, Maybe PathTo)
 selectTopUtility rs = 
@@ -45,8 +50,10 @@ selectTopUtility rs =
           Just (s, a, i, n, p) -> Just (s, a & acStdGen .~ rndB, i, n, p)
 
           Nothing -> Just u
+{-! SECTION> 13_selectTopUtility !-}
 
   
+{-! SECTION< 13_assessUtilities !-}
 -- | See the docs on acUtilities
 -- | Mainly that the world is threaded through utilities and any updates are kept even if no/other utilities are selected
 -- | The actor in the results are speculative and only the actor for the selected utility gets used
@@ -65,27 +72,34 @@ assessUtilities paths world actor =
         (rs, wNext) = u w a paths
       in
       (hist <> rs, wNext)
+{-! SECTION> 13_assessUtilities !-}
 
 
+{-! SECTION< 13_rankUtility !-}
 rankUtility :: [(Float, Actor, Impulse, Text, Maybe PathTo)] -> [(Float, Actor, Impulse, Text, Maybe PathTo)]
 rankUtility us = 
   Lst.reverse $ Lst.sortOn (\(x, _, _, _, _) -> x) us
+{-! SECTION> 13_rankUtility !-}
 
 
+{-! SECTION< 13_clamp !-}
 clamp :: Float -> Float
 clamp = clampTo 0.0 1.0
 
 
 clampTo :: Float -> Float -> Float -> Float
 clampTo vmin vmax = min vmax . max vmin
+{-! SECTION> 13_clamp !-}
 
 
+{-! SECTION< 13_onlyEntitiesOfType !-}
 onlyEntitiesOfType :: [E.EntityType] -> [PathTo] -> [PathTo]
 onlyEntitiesOfType types =
   filter go
   where
     go (PathToEntity _ e _) = e ^. enType `elem` types
     go _ = False
+{-! SECTION> 13_onlyEntitiesOfType !-}
 
 
 emptyDisposition :: Disposition
@@ -96,6 +110,7 @@ emptyDisposition = Disposition { _dsSmitten = 0
                                } 
 
 
+{-! SECTION< 13_distanceToRange !-}
 distanceToRange :: PathTo -> Int -> Maybe Float
 distanceToRange pt fov =
   let (Path p) = path pt in
@@ -112,14 +127,18 @@ distanceToRange pt fov =
         -- Max distance for fov, i.e. cartesian distance to a corner of the fov
         let maxDist = sqrt ((fromIntegral fov ** 2) * 2) in
         Just $ distance / maxDist
+{-! SECTION> 13_distanceToRange !-}
       
 
+{-! SECTION< 13_wander !-}
 utilityOfWander :: World -> Actor -> [PathTo] -> ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
 utilityOfWander world actor _paths = 
   let rule = clamp $ 0.02 * (10 * clamp (actor ^. acDisposition ^. dsWanderlust)) in
   ([(rule, actor, ImpMoveRandom, "wander", Nothing)], world)
+{-! SECTION> 13_wander !-}
 
 
+{-! SECTION< 13_wanderToExit !-}
 utilityOfWanderToExit :: World -> Actor -> [PathTo] -> ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
 utilityOfWanderToExit world actor allPaths =
   let
@@ -127,8 +146,10 @@ utilityOfWanderToExit world actor allPaths =
     clampedResults = moveTowardsUtil [E.Door] rule allPaths actor
   in
   ((\(p, score) -> (score, actor, ImpMoveTowards (path p), "wander to exit", Just p)) <$> clampedResults, world)
+{-! SECTION> 13_wanderToExit !-}
 
   
+{-! SECTION< 13_infatuation !-}
 utilityOfInfatuation :: World -> Actor -> [PathTo] -> ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
 utilityOfInfatuation world actor allPaths =
   let
@@ -136,8 +157,10 @@ utilityOfInfatuation world actor allPaths =
     clampedResults = moveTowardsUtil (actor ^. acDisposition ^. dsSmittenWith) rule allPaths actor
   in
   ((\(p, score) -> (score, actor, ImpMoveTowards (path p), "infatuation", Just p)) <$> clampedResults, world)
+{-! SECTION> 13_infatuation !-}
 
 
+{-! SECTION< 13_moveTowardsUtil !-}
 moveTowardsUtil :: [E.EntityType] -> (Float -> Float) -> [PathTo] -> Actor -> [(PathTo, Float)]
 moveTowardsUtil es rule paths actor =
   let
@@ -152,8 +175,10 @@ moveTowardsUtil es rule paths actor =
     clampedResults = Ar.second clamp <$> results
   in
     clampedResults
+{-! SECTION> 13_moveTowardsUtil !-}
 
 
+{-! SECTION< 13_catNormalisedMay !-}
 catNormalisedMay :: [(PathTo, Maybe float)] -> [(PathTo, float)]
 catNormalisedMay ps =
   catMaybes $ go <$> ps
@@ -161,5 +186,5 @@ catNormalisedMay ps =
   where
     go (_, Nothing) = Nothing
     go (p, Just v) = Just (p, v) 
-
+{-! SECTION> 13_catNormalisedMay !-}
 
