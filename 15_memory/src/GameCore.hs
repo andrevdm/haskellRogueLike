@@ -52,8 +52,10 @@ data Actor = Actor { _acId :: !Aid
                    -- | The actor's disposition - the values that define the actors personality
                    , _acDisposition :: !Disposition
 
+{-! SECTION< 15_actorMem !-}
                    -- | The actor's memory about positions
                    , _acPosMemory :: !(M.Memory WorldPos)
+{-! SECTION> 15_actorMem !-}
                    }
 
 data Player = Player { _plConn :: !Host.Connection

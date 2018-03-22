@@ -139,6 +139,7 @@ utilityOfWander world actor _paths = do
   pure ([(rule, actor, ImpMoveRandom, "wander", Nothing)], world)
 
 
+{-! SECTION< 15_top_wanderToExit !-}
 utilityOfWanderToExit :: World -> Actor -> [PathTo] -> UtilAnnotator ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)
 utilityOfWanderToExit world' actor' allPaths = do
   telld $ UeAt "WanderToExit"
@@ -147,6 +148,8 @@ utilityOfWanderToExit world' actor' allPaths = do
   --  list of doors to ignore
   let keyAvoid = "wanderExit.avoid" -- key to access  memory
   let ttlAvoid = 200                -- memory will be retained for 200 ticks
+{-! SECTION> 15_top_wanderToExit !-}
+{-! SECTION< 15_isOnExit_wanderToExit !-}
   let (world, actor) = fromMaybe (world', actor') $
         case Map.lookup (actor' ^. acWorldPos) (world' ^. wdMap) of
           Nothing -> Nothing -- not standing on anything
@@ -158,24 +161,31 @@ utilityOfWanderToExit world' actor' allPaths = do
               let a = actor' & acPosMemory %~ M.remember const keyAvoid ttlAvoid (actor' ^. acWorldPos) in
               -- Return the update world' and actor
               Just (world' & wdActors %~ Map.insert (actor' ^. acId) a, a)
+{-! SECTION> 15_isOnExit_wanderToExit !-}
 
+{-! SECTION< 15_avoid_wanderToExit !-}
   -- Get the positions to avoid. 
   let avoid = M.recall keyAvoid $ actor ^. acPosMemory
   telld . UeNote . show $ Map.keys avoid
   -- Remove positions to avoid
   let paths = removePathsToAvoid avoid allPaths
+{-! SECTION> 15_avoid_wanderToExit !-}
 
+{-! SECTION< 15_util_wanderToExit !-}
   -- Run the utility on the remaining paths
   let rule x = clamp $ 1 - (0.04 * x + (1.24 - clamp (actor ^. acDisposition ^. dsWanderlustToExits))) 
   let clampedResults = moveTowardsUtil [E.Door] rule paths actor
   pure ((\(p, score) -> (score, actor, ImpMoveTowards (path p), "wander to exit", Just p)) <$> clampedResults, world)
+{-! SECTION> 15_util_wanderToExit !-}
 
+{-! SECTION< 15_removePathsToAvoid_wanderToExit !-}
   where
     removePathsToAvoid :: Map WorldPos Int -> [PathTo] -> [PathTo]
     removePathsToAvoid avoid paths =
       let isInAvoid p = Map.member p avoid in
       let shouldInclude p = maybe True (not . isInAvoid) (lastMay p) in
       filter (\p -> shouldInclude (pathPs . path $ p)) paths
+{-! SECTION> 15_removePathsToAvoid_wanderToExit !-}
 
   
 utilityOfInfatuation :: World -> Actor -> [PathTo] -> UtilAnnotator ([(Float, Actor, Impulse, Text, Maybe PathTo)], World)

@@ -180,7 +180,7 @@ bootWorld conn screenSize mapData std =
             , _acFov = Nothing
             , _acFovHistory = Set.empty
             , _acSkipMove = False
-            , _acMoveEnergyCost = 150
+            , _acMoveEnergyCost = 100 -- 150
             , _acEnergy = B.new 180 100
             , _acUtilities = []
             , _acDisposition = UB.emptyDisposition 
@@ -730,6 +730,7 @@ flatFov (Just fov) = Lst.nub . Lst.concat $ snd <$> fov
 --                                     (exit)
 --  
 --  
+{-! SECTION< 15_playerMoving !-}
 playerMoving :: Int -> World -> World -> World
 playerMoving pendingCost pendingWorld oldWorld = 
   let playerAttemptedMoveWorld = 
@@ -739,6 +740,7 @@ playerMoving pendingCost pendingWorld oldWorld =
           >>= runPendingIfPlayerHasEnergy
           >>= runPlayerTick -- run the tick for the player, this is only run if the move was allowed
           >>= stopIfPlayerCanStillMove
+{-! SECTION> 15_playerMoving !-}
   in
   case playerAttemptedMoveWorld of
     Left w -> w -- Left means stop 
@@ -771,8 +773,10 @@ playerMoving pendingCost pendingWorld oldWorld =
         -- disallow
         Left w
 
+{-! SECTION< 15_runPlayerTick !-}
     runPlayerTick w =
       Right $ w & (wdPlayer . plActor) %~ actorTick
+{-! SECTION> 15_runPlayerTick !-}
 
     stopIfPlayerCanStillMove w =
       let
