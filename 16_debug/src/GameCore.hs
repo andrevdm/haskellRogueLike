@@ -55,8 +55,10 @@ data Actor = Actor { _acId :: !Aid
                    -- | The actor's memory about positions
                    , _acPosMemory :: !(M.Memory WorldPos)
 
-                   -- | Player's properties
+                   -- | Actors's properties
+{-! SECTION< 16_acProps !-}
                    , _acProps :: !(Map Text Text)
+{-! SECTION> 16_acProps !-}
                    }
 
 data Player = Player { _plConn :: !Host.Connection
@@ -94,9 +96,11 @@ data Entity = Entity { _enType :: !E.EntityType
 newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
 newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
 
+{-! SECTION< 16_actions !-}
 data RogueAction = ActMovePlayer (Int, Int)
                  | ActSetPlayerViewPortStyle ViewPortStyle
                  | ActTogglePlayerProp Text Text
+{-! SECTION> 16_actions !-}
 
 
 data ViewPortStyle = ViewPortCentre

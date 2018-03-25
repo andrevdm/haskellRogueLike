@@ -141,7 +141,9 @@ bootWorld conn screenSize mapData std =
                                        , ("shift+v b", "Game:ViewPort:Border")
                                        , ("shift+v l", "Game:ViewPort:Lock")
 
+{-! SECTION< 16_keySetup !-}
                                        , ("shift+d d", "Debug:Light:Toggle")
+{-! SECTION> 16_keySetup !-}
                                        ]
              , _cfgMinMaxBounds = (-300, 300, -300, 300)
              }
@@ -438,7 +440,9 @@ handleKey world (cmd:_) =
     "Game:ViewPort:Border" -> [ActSetPlayerViewPortStyle $ ViewPortBorder 2]
     "Game:ViewPort:Lock"   -> [ActSetPlayerViewPortStyle $ ViewPortLock (worldCoordToPlayer topLeft $ actor ^. acWorldPos)]
 
+{-! SECTION< 16_handleKey !-}
     "Debug:Light:Toggle" -> [ActTogglePlayerProp "debug:light" "on"]
+{-! SECTION> 16_handleKey !-}
 
     _ -> []
 handleKey _ _ = []
@@ -458,12 +462,14 @@ runAction world action =
     ActSetPlayerViewPortStyle style ->
       world & (wdPlayer . plViewPortStyle) .~ style
 
+{-! SECTION< 16_toggle !-}
     ActTogglePlayerProp prop valEnabled ->
       world & (wdPlayer . plActor . acProps) %~ Map.alter (toggleMapProp valEnabled) prop
 
   where
     toggleMapProp v Nothing = Just v
     toggleMapProp _ (Just _) = Nothing
+{-! SECTION> 16_toggle !-}
 
 
 tryMoveActor :: World -> Actor -> (Int, Int) -> Maybe World
@@ -667,6 +673,7 @@ isTransparent wmap pos =
     Just e -> (e ^. enType) /= E.Wall
 
   
+{-! SECTION< 16_darknessFovOverlay !-}
 darknessFovOverlay :: Player -> Actor -> Map PlayerPos Tile
 darknessFovOverlay player actor =
   case player ^. plActor ^. acProps ^.at "debug:light" of
@@ -689,6 +696,7 @@ darknessFovOverlay player actor =
 
     Just _ ->
       Map.empty
+{-! SECTION> 16_darknessFovOverlay !-}
 
   
 flatFov :: Maybe [(WorldPos, [WorldPos])] -> [WorldPos]

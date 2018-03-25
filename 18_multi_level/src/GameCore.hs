@@ -55,7 +55,7 @@ data Actor = Actor { _acId :: !Aid
                    -- | The actor's memory about positions
                    , _acPosMemory :: !(M.Memory WorldPos)
 
-                   -- | Player's properties
+                   -- | Actors's properties
                    , _acProps :: !(Map Text Text)
                    }
 
