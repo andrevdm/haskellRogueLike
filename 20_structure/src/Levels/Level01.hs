@@ -1,7 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 
-module Levels.Level01 where
+module Levels.Level01 (mkLevel) where
 
 import Protolude hiding (Map)
 import qualified Data.Set as Set
@@ -15,6 +16,14 @@ import qualified Entities as E
 import qualified EntityType as E
 import qualified BoundedInt as B
 import qualified UtilityBrain as UB
+
+mkLevel :: Text -> Level
+mkLevel mapText =
+  Level { _lvlName = "L01"
+        , _lvlBoot = bootLevel 
+        , _lvlMapText = mapText
+        , _lvlStoryHandler = storyWaitingForKey
+        }
 
 bootLevel :: World -> World
 bootLevel w1 =
@@ -58,12 +67,72 @@ bootLevel w1 =
             , _acProps = Map.empty
             }
 
-tryMove :: [Actor] -> Maybe E.EntityType -> World -> WorldPos -> Actor -> [RogueAction]
-tryMove destActors destEntityType _ posTo movingActor =
-  -- Is the move allowed
-  case (destActors, destEntityType) of
-    ([], Just E.Blank) -> [ActMoveActor movingActor posTo]
-    ([], Just E.Door) -> [ActMoveActor movingActor posTo]
-    ([], Nothing) -> [ActMoveActor movingActor posTo]
-    (_, Just E.Stairs) -> [ActGotoLevel Levels02]
-    _ -> []
+
+storyCommon :: World -> RogueEvent -> (RogueEvent -> [RogueAction]) -> [RogueAction]
+storyCommon world evt handler =
+  case evt of
+    EvtMove destActors destEntityType posTo movingActor ->
+      let isPlayer = isPlayerMoving world movingActor in
+      case (isPlayer, destActors, destEntityType) of
+        (_, [], Just E.Blank) -> [ActMoveActor movingActor posTo]
+        (_, [], Just E.Door) -> [ActMoveActor movingActor posTo]
+        (_, [], Nothing) -> [ActMoveActor movingActor posTo]
+
+        -- Only the player can pickup potions. Set lights on
+        (True, [], Just E.PotionLight) -> [ ActMoveActor movingActor posTo
+                                          , ActSetPlayerProp "debug:light" "on"
+                                          , ActRemoveEntity E.PotionLight posTo
+                                          ]
+
+        -- Only the player can pickup potions. Set lights off
+        (True, [], Just E.PotionDark) -> [ ActMoveActor movingActor posTo
+                                         , ActClearPlayerProp "debug:light"
+                                         , ActRemoveEntity E.PotionDark posTo
+                                         ]
+        -- Fall through 
+        _ -> handler evt
+
+
+storyWaitingForKey :: World -> RogueEvent -> [RogueAction]
+storyWaitingForKey world evt =
+  storyCommon world evt $
+    \case
+      EvtMove destActors destEntityType posTo movingActor ->
+        let isPlayer = isPlayerMoving world movingActor in
+
+        case (isPlayer, destActors, destEntityType) of
+          -- Player picked up the key
+          (True, [], Just E.Key) ->
+            [ ActMoveActor movingActor posTo
+            , ActSetStoryHandler storyDoorOpen
+            , ActRemoveEntity E.Key posTo
+            ] <>
+            -- Replace all closed doors with open ones
+            ((\closedDoorAt -> ActReplaceEntity E.DoorClosed closedDoorAt $ E.getEntity E.Door) <$> findPos E.DoorClosed)
+                   
+          _ -> []
+
+  where
+    findPos :: E.EntityType -> [WorldPos]
+    findPos et =
+      let
+        es = Map.toList $ world ^. wdMap
+        found = filter (\(_, e) -> e ^. enType == et) es
+      in
+      fst <$> found
+
+  
+storyDoorOpen :: World -> RogueEvent -> [RogueAction]
+storyDoorOpen world evt =
+  storyCommon world evt $
+    \case
+      EvtMove destActors destEntityType posTo movingActor ->
+        case (destActors, destEntityType) of
+          ([], Just E.Key) -> [ActMoveActor movingActor posTo]
+          (_, Just E.Stairs) -> [ActGotoLevel Levels02]
+          _ -> []
+
+
+isPlayerMoving :: World -> Actor -> Bool
+isPlayerMoving w a =
+  w ^. wdPlayer ^. plActor ^. acId == a ^. acId

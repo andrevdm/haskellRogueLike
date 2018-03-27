@@ -18,6 +18,9 @@ import qualified Network.Wai.Handler.Warp as Warp
 import qualified Network.Wai.Handler.WebSockets as WaiWs
 import qualified Network.WebSockets as WS
 
+----------------------------------------------------------------------------------------------------------------
+-- L0 (setup)
+----------------------------------------------------------------------------------------------------------------
 data Connection = Connection { _conSendData :: BSL.ByteString -> IO ()
                              , _conReceiveText :: IO Text
                              }
@@ -62,4 +65,4 @@ wsapp startHost pending = do
   startHost Connection { _conSendData = WS.sendBinaryData conn
                        , _conReceiveText = WS.receiveData conn
                        }
-
+----------------------------------------------------------------------------------------------------------------

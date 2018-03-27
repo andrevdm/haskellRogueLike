@@ -4,7 +4,6 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 
 module GameEngine where
 
@@ -23,11 +22,10 @@ import qualified Codec.Compression.BZip as Bz
 import qualified System.Random as Rnd
 import           Control.Lens (at, _1, (^.), (.~), (%~))
 import qualified Control.Arrow as Ar
-import           Control.Monad.Writer.Strict (runWriter)
-import           Control.Concurrent.STM (atomically, readTVar, newTVar, modifyTVar', TVar)
 import           Control.Monad.Trans (lift)
 import           Control.Monad.Reader (ask, runReaderT, ReaderT, MonadReader, MonadTrans)
-import           Control.Concurrent.STM (TVar, modifyTVar', newTVar, atomically, readTVar, writeTVar)
+import           Control.Monad.Writer.Strict (runWriter)
+import           Control.Concurrent.STM (atomically, readTVar, writeTVar, newTVar, modifyTVar', TVar)
 
 import qualified Memory as M
 import           GameCore
@@ -116,7 +114,7 @@ startGame = do
       Just e -> putText e
 ----------------------------------------------------------------------------------------------------------------
 
-
+  
 ----------------------------------------------------------------------------------------------------------------
 -- L2 (bridge / external services)
 ----------------------------------------------------------------------------------------------------------------
@@ -274,7 +272,6 @@ parseCommand t =
     (c:d) -> Just (c, d)
     _ -> Nothing
 
-
 initialiseConnection :: Host.Connection -> [Text] -> Rnd.StdGen -> (Levels -> Level) -> Either Text World
 initialiseConnection conn cmdData std getLevel = 
   case parseScreenSize cmdData of
@@ -284,7 +281,7 @@ initialiseConnection conn cmdData std getLevel =
     Just (width, height) ->
       Right $ bootWorld conn (width, height) std getLevel Levels01
 
-  
+
 bootWorld :: Host.Connection -> (Int, Int) -> Rnd.StdGen -> (Levels -> Level) -> Levels -> World
 bootWorld conn screenSize std getLevel startLevel = 
   let
@@ -542,6 +539,12 @@ runAction world action =
     ActTogglePlayerProp prop valEnabled ->
       world & (wdPlayer . plActor . acProps) %~ Map.alter (toggleMapProp valEnabled) prop
 
+    ActSetPlayerProp prop valEnabled ->
+      world & (wdPlayer . plActor . acProps) %~ Map.insert prop valEnabled
+
+    ActClearPlayerProp prop ->
+      world & (wdPlayer . plActor . acProps) %~ Map.delete prop
+
     ActMoveActor actor worldPos ->
       let
         movedActor = actor & acWorldPos .~ worldPos
@@ -558,9 +561,26 @@ runAction world action =
         (world ^. wdGetLevel)
         l
 
+    ActSetStoryHandler h ->
+      world & (wdLevel . lvlStoryHandler) .~ h
+
+    ActRemoveEntity existingType atWorldPos ->
+      world & wdMap %~ Map.alter (deleteMapEntity existingType) atWorldPos
+
+    ActReplaceEntity existingType atWorldPos newEntity ->
+      world & wdMap %~ Map.alter (alterMapEntity existingType newEntity) atWorldPos
+
   where
     toggleMapProp v Nothing = Just v
     toggleMapProp _ (Just _) = Nothing
+
+    alterMapEntity :: E.EntityType -> Entity -> Maybe Entity -> Maybe Entity
+    alterMapEntity _ new Nothing = Just new
+    alterMapEntity oldType new (Just oldEntity) = if oldType == (oldEntity ^. enType) then Just new else Just oldEntity
+
+    deleteMapEntity :: E.EntityType -> Maybe Entity -> Maybe Entity
+    deleteMapEntity _ Nothing = Nothing
+    deleteMapEntity oldType (Just oldEntity) = if oldType == (oldEntity ^. enType) then Nothing else Just oldEntity
 
 
 tryMoveActor :: World -> Actor -> (Int, Int) -> Maybe World
@@ -587,8 +607,10 @@ tryMoveActor world actor (dx, dy) =
       destEntityType = _enType <$> destEntity
       -- Actors at destination
       destActors = filter (\a -> a ^. acWorldPos == tryWorldTo') (getAllActors world)
-      -- Get actions
-      actions = (world ^. wdLevel ^. lvlTryMove) destActors destEntityType world tryWorldTo' actor
+      -- Create move event
+      evt = EvtMove destActors destEntityType tryWorldTo' actor
+      -- Run even to get actions
+      actions = (world ^. wdLevel ^. lvlStoryHandler) world evt 
    in
    Just $ runActions world actions 
 

@@ -96,7 +96,7 @@ data Entity = Entity { _enType :: !E.EntityType
 data Level = Level { _lvlName :: !Text
                    , _lvlBoot :: !(World -> World)
                    , _lvlMapText :: !Text
-                   , _lvlTryMove :: !([Actor] -> Maybe E.EntityType -> World -> WorldPos -> Actor -> [RogueAction])
+                   , _lvlStoryHandler :: !StoryHandler
                    }
 
 data Levels = Levels01
@@ -104,12 +104,20 @@ data Levels = Levels01
 
 newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
 newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
+type StoryHandler = World -> RogueEvent -> [RogueAction]
 
 data RogueAction = ActMovePlayer (Int, Int)
                  | ActMoveActor Actor WorldPos
                  | ActSetPlayerViewPortStyle ViewPortStyle
                  | ActTogglePlayerProp Text Text
+                 | ActClearPlayerProp Text
+                 | ActSetPlayerProp Text Text
                  | ActGotoLevel Levels
+                 | ActSetStoryHandler StoryHandler
+                 | ActRemoveEntity E.EntityType WorldPos
+                 | ActReplaceEntity E.EntityType WorldPos Entity
+
+data RogueEvent = EvtMove [Actor] (Maybe E.EntityType) WorldPos Actor
 
 data ViewPortStyle = ViewPortCentre
                    | ViewPortLock PlayerPos
@@ -117,7 +125,6 @@ data ViewPortStyle = ViewPortCentre
                    | ViewPortSnapCentre
                    | ViewPortBorder Int
                    deriving (Show, Eq)
-
 
 
 ----------------------------------------------------------------------------------------

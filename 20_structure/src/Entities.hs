@@ -15,15 +15,18 @@ entities :: Map E.EntityType Entity
 loadTexts :: Map Text Entity
 
 (tiles, entities, loadTexts) =
-  let is = [ (E.Blank     , (41, 13), Nothing)
-           , (E.Door      , (26, 15), Just "+")
-           , (E.DoorClosed, (21, 15), Just "-")
-           , (E.Wall      , ( 9, 14), Just "w")
-           , (E.Player    , ( 8,  3), Nothing)
-           , (E.Bug       , (25,  3), Nothing)
-           , (E.Snake     , (38,  4), Nothing)
-           , (E.Dark      , (43, 11), Nothing)
-           , (E.Stairs    , (56, 44), Just "s")
+  let is = [ (E.Blank      , (41, 13), Nothing)
+           , (E.Door       , (26, 15), Just "+")
+           , (E.DoorClosed , (21, 15), Just "-")
+           , (E.Wall       , ( 9, 14), Just "w")
+           , (E.Player     , ( 8,  3), Nothing)
+           , (E.Bug        , (25,  3), Nothing)
+           , (E.Snake      , (38,  4), Nothing)
+           , (E.Dark       , (43, 11), Nothing)
+           , (E.Stairs     , (56, 44), Just "s")
+           , (E.PotionDark , (16, 46), Just "pd")
+           , (E.PotionLight, ( 8, 46), Just "pl")
+           , (E.Key        , (54, 45), Just "ke")
            ]
   in
   let mkData (typ, pos@(x, y), l) (tiles', entities', loads') =
