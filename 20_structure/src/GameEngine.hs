@@ -2,6 +2,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
@@ -30,7 +31,7 @@ import           Control.Concurrent.STM (atomically, readTVar, writeTVar, newTVa
 import qualified Memory as M
 import           GameCore
 import qualified GameHost as Host
-import           GameHost (conSendData, conReceiveText)
+import           GameHost (conSendData, conReceiveText, HostT, unHostT)
 import qualified Entities as E
 import qualified EntityType as E
 import qualified BoundedInt as B
@@ -38,41 +39,47 @@ import qualified UtilityBrain as UB
 
 
 ----------------------------------------------------------------------------------------------------------------
--- L0 (setup)
+-- L1 Host (orchestration)
 ----------------------------------------------------------------------------------------------------------------
 runGame :: (Levels -> Level) -> IO ()
-runGame getLevel = Host.runHost (manageConnection getLevel)
+runGame getLevel = 
+  runReaderT (unHostT $ Host.runHost (manageConnection getLevel)) Nothing
 
 
-manageConnection :: (Levels -> Level) -> Host.Connection -> IO ()
-manageConnection getLevel conn = do
-  initCmd <- conn ^. conReceiveText 
+manageConnection :: (Levels -> Level) -> HostT IO ()
+manageConnection getLevel = 
+  ask >>= \case
+    Just conn -> do
+      initCmd <- lift $ conn ^. conReceiveText 
 
-  case parseCommand initCmd of
-    Just ("init", cmdData) -> do
-      std <- Rnd.getStdGen
-      
-      case initialiseConnection conn cmdData std getLevel of -- initialiseConnection is L3
-        Right world -> do
-          app <- atomically $ do
-            worldV <- newTVar world
-            connV <- newTVar conn
-            pure AppState { appConnection = connV
-                          , appWorld = worldV
-                          }
+      case parseCommand initCmd of
+        Just ("init", cmdData) -> do
+          std <- lift Rnd.getStdGen
+          
+          case initialiseConnection conn cmdData std getLevel of -- initialiseConnection is L3
+            Right world -> do
+              app <- lift . atomically $ do
+                worldV <- newTVar world
+                connV <- newTVar conn
+                pure AppState { appConnection = connV
+                              , appWorld = worldV
+                              }
 
-          runReaderT (unAppT $ initialiseConfig >> startGame) app
+              lift $ runReaderT (unAppT $ initialiseConfig >> startGame) app
  
-        Left e ->
-          runReaderT (sendHostError e) conn
-        
-    _ ->
-      pass
+            Left e ->
+              lift $ runReaderT (sendHostError e) conn
+            
+        _ ->
+          pass
+
+    Nothing -> 
+      lift . putText $ "Error creating connection"
 ----------------------------------------------------------------------------------------------------------------
 
 
 ----------------------------------------------------------------------------------------------------------------
--- L1 (orchestration)
+-- L1 App (orchestration)
 ----------------------------------------------------------------------------------------------------------------
 data AppState = AppState { appConnection :: !(TVar Host.Connection)
                          , appWorld :: !(TVar World)
