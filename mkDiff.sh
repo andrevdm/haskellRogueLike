@@ -1,7 +1,7 @@
 #!/bin/sh
 
 rm -rf _diff | true
-rsync -mr --exclude '.git/***' --exclude '.stack-work' --exclude '_diff/***' --include '*/' --include '*hs' --include '*js' --include '*html' --include '*cabal' --exclude '*' ./[01]*_* ./_diff
+rsync -mr --exclude '.git/***' --exclude '.stack-work' --exclude '_diff/***' --include '*/' --include '*hs' --include '*js' --include '*html' --include '*cabal' --exclude '*' ./[012]*_* ./_diff
 
 find _diff/ -type f -name "*hs" | xargs sed -i 's/{-! SECTION.*//g'
 find _diff/ -type f -name "*js" | xargs sed -i 's/\/\/!SECTION.*//g'
@@ -97,6 +97,10 @@ diff 18_multi_level/app/ 19_story/app/ -w -B -a -d -u -b -r --new-file >> ../19_
 diff 18_multi_level/html/rogue.html 19_story/html/rogue.html -w -B -a -d -u -b >> ../19_story/changes.patch | true
 diff 18_multi_level/html/rogue.js 19_story/html/rogue.js -w -B -a -d -u -b >> ../19_story/changes.patch | true
 
+#20
+diff 19_story/src/ 20_structure/src/ -w -B -a -d -u -b -r --new-file > ../20_structure/changes.patch | true
+diff 19_story/app/ 20_structure/app/ -w -B -a -d -u -b -r --new-file >> ../20_structure/changes.patch | true
+
 cd ..
 
 
@@ -117,4 +121,5 @@ cat 16_debug/changes.patch            | ./diff2html > 16_debug/changes.patch.htm
 cat 17_levels/changes.patch           | ./diff2html > 17_levels/changes.patch.html  &
 cat 18_multi_level/changes.patch      | ./diff2html > 18_multi_level/changes.patch.html  &
 cat 19_story/changes.patch            | ./diff2html > 19_story/changes.patch.html  &
+cat 20_structure/changes.patch        | ./diff2html > 20_structure/changes.patch.html  &
 wait
