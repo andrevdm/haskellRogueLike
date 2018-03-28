@@ -8,16 +8,12 @@ module GameHost ( runHost
                 , Connection(..)
                 , conSendData
                 , conReceiveText
-                , HostState
-                , HostT (..)
                 ) where
 
 import Protolude hiding (Map)
 import qualified Web.Scotty as Sc
 import qualified Data.ByteString.Lazy as BSL
 import           Control.Lens.TH (makeLenses)
-import           Control.Monad.Trans (lift)
-import           Control.Monad.Reader (runReaderT, ReaderT, MonadReader, MonadTrans)
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Middleware.Gzip as Sc
 import qualified Network.Wai.Handler.Warp as Warp
@@ -25,29 +21,24 @@ import qualified Network.Wai.Handler.WebSockets as WaiWs
 import qualified Network.WebSockets as WS
 
 ----------------------------------------------------------------------------------------------------------------
--- L1 Host (orchestration)
+-- L0 Hosting
 ----------------------------------------------------------------------------------------------------------------
-type HostState = Maybe Connection 
-
-newtype HostT m a = HostT { unHostT :: ReaderT HostState m a 
-                          } deriving (Functor, Applicative, Monad, MonadReader HostState, MonadTrans)
-
 data Connection = Connection { _conSendData :: BSL.ByteString -> IO ()
                              , _conReceiveText :: IO Text
                              }
 
 makeLenses ''Connection
 
-runHost :: HostT IO () -> HostT IO ()
+runHost :: (Connection -> IO ()) -> IO ()
 runHost startHost = do
   let settings = Warp.setPort 61492 $ Warp.setHost "127.0.0.1" Warp.defaultSettings
   sapp <- scottyApp 
-  lift . Warp.runSettings settings $ WaiWs.websocketsOr WS.defaultConnectionOptions (wsapp startHost) sapp
+  Warp.runSettings settings $ WaiWs.websocketsOr WS.defaultConnectionOptions (wsapp startHost) sapp
 
 
-scottyApp :: HostT IO Wai.Application
+scottyApp :: IO Wai.Application
 scottyApp = 
-  lift . Sc.scottyApp $ do
+  Sc.scottyApp $ do
     Sc.middleware $ Sc.gzip $ Sc.def { Sc.gzipFiles = Sc.GzipCompress }
     --Sc.middleware S.logStdoutDev
 
@@ -69,13 +60,13 @@ scottyApp =
       Sc.file $ "html/images/" <> img
 
   
-wsapp :: HostT IO () -> WS.ServerApp
-wsapp startHost pending = do
+wsapp :: (Connection -> IO ()) -> WS.ServerApp
+wsapp runConnection pending = do
   conn <- WS.acceptRequest pending
   WS.forkPingThread conn 30
 
   let h = Connection { _conSendData = WS.sendBinaryData conn
                      , _conReceiveText = WS.receiveData conn
-                     }
-  runReaderT (unHostT startHost) (Just h)
+                     } 
+  runConnection h
 ----------------------------------------------------------------------------------------------------------------

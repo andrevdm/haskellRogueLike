@@ -31,7 +31,7 @@ import           Control.Concurrent.STM (atomically, readTVar, writeTVar, newTVa
 import qualified Memory as M
 import           GameCore
 import qualified GameHost as Host
-import           GameHost (conSendData, conReceiveText, HostT, unHostT)
+import           GameHost (conSendData, conReceiveText)
 import qualified Entities as E
 import qualified EntityType as E
 import qualified BoundedInt as B
@@ -39,42 +39,33 @@ import qualified UtilityBrain as UB
 
 
 ----------------------------------------------------------------------------------------------------------------
--- L1 Host (orchestration)
+-- L0 Hosting
 ----------------------------------------------------------------------------------------------------------------
 runGame :: (Levels -> Level) -> IO ()
 runGame getLevel = 
-  runReaderT (unHostT $ Host.runHost (manageConnection getLevel)) Nothing
+  Host.runHost $ manageConnection getLevel
 
 
-manageConnection :: (Levels -> Level) -> HostT IO ()
-manageConnection getLevel = 
-  ask >>= \case
-    Just conn -> do
-      initCmd <- lift $ conn ^. conReceiveText 
+manageConnection :: (Levels -> Level) -> Host.Connection -> IO ()
+manageConnection getLevel conn = do
+  initCmd <- conn ^. conReceiveText 
 
-      case parseCommand initCmd of
-        Just ("init", cmdData) -> do
-          std <- lift Rnd.getStdGen
-          
-          case initialiseConnection conn cmdData std getLevel of -- initialiseConnection is L3
-            Right world -> do
-              app <- lift . atomically $ do
-                worldV <- newTVar world
-                connV <- newTVar conn
-                pure AppState { appConnection = connV
-                              , appWorld = worldV
-                              }
+  case parseCommand initCmd of
+    Just ("init", cmdData) -> do
+      std <- Rnd.getStdGen
+      
+      case initialiseConnection conn cmdData std getLevel of -- initialiseConnection is L3
+        Right world -> do
+          app <- atomically $ AppState <$> newTVar conn <*> newTVar world
 
-              lift $ runReaderT (unAppT $ initialiseConfig >> startGame) app
- 
-            Left e ->
-              lift $ runReaderT (sendHostError e) conn
-            
-        _ ->
-          pass
+          -- Start the AppT pipeline
+          runReaderT (unAppT $ initialiseConfig >> startGame) app
 
-    Nothing -> 
-      lift . putText $ "Error creating connection"
+        Left e ->
+          runReaderT (sendHostError e) conn
+        
+    _ ->
+      pass
 ----------------------------------------------------------------------------------------------------------------
 
 
@@ -192,11 +183,6 @@ handleCommand t =
       pure Nothing
 
 
-sendConfig :: (MonadHost m) => Config -> m ()
-sendConfig config =
-  sendHostData . Ae.encodeText $ UiConfig "config" (buildConfig config)
-
-
 runCmd :: (MonadHost m, MonadWorld m) => Text -> [Text] -> m ()
 runCmd cmd cmdData = 
   case cmd of
@@ -267,6 +253,11 @@ runCmd cmd cmdData =
         UeSelectTopAbove f  -> "    Top above: " <> showF f
         UeSelectTopOne val n i d -> "    Select top one: " <> n <> ", impulse=" <> show i <> ", score=" <> showF val <> "," <> d
         UeNote n -> "    Note: " <> n
+
+  
+sendConfig :: (MonadHost m) => Config -> m ()
+sendConfig config =
+  sendHostData . Ae.encodeText $ UiConfig "config" (buildConfig config)
 ----------------------------------------------------------------------------------------------------------------
 
 
