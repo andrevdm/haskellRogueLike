@@ -1,3 +1,4 @@
+{-! SECTION< 17_level01 !-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -63,3 +64,4 @@ bootLevel w1 =
             , _acPosMemory = M.empty
             , _acProps = Map.empty
             }
+{-! SECTION> 17_level01 !-}

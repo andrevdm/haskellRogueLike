@@ -10,6 +10,7 @@ import qualified GameCore as GC
 import qualified GameEngine as GE
 import qualified Levels.Level01 as L01
 
+{-! SECTION< 17_main !-}
 main :: IO ()
 main = do
   map01 <- Txt.readFile "worlds/simple.csv"
@@ -17,5 +18,5 @@ main = do
 
 getLevel :: Text -> GC.Levels -> GC.Level
 getLevel map01 GC.Levels01 = L01.mkLevel map01
-
+{-! SECTION> 17_main !-}
 

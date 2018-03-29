@@ -82,6 +82,7 @@ initialiseConnection conn cmdData std getLevel =
       Right $ bootWorld conn (width, height) std getLevel
 
 
+{-! SECTION< 17_bootWorld !-}
 bootWorld :: Host.Connection -> (Int, Int) -> Rnd.StdGen -> (Levels -> Level) -> World
 bootWorld conn screenSize std getLevel = 
   let
@@ -99,6 +100,7 @@ bootWorld conn screenSize std getLevel =
                }
 
     w2 = level ^. lvlBoot $ w1
+{-! SECTION> 17_bootWorld !-}
   in
   -- Calculate the actors fov
   updateAllActors w2 updateActorFov
