@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Levels.Level02 where
 
@@ -6,6 +7,13 @@ import           Protolude
 
 import           GameCore
 import qualified EntityType as E
+
+mkLevel :: Text -> Level
+mkLevel mapData = Level { _lvlName = "L02"
+                        , _lvlBoot = bootLevel 
+                        , _lvlMapText = mapData
+                        , _lvlTryMove = tryMove
+                        }
 
 bootLevel :: World -> World
 bootLevel w = w

@@ -16,6 +16,13 @@ import qualified EntityType as E
 import qualified BoundedInt as B
 import qualified UtilityBrain as UB
 
+mkLevel :: Text -> Level
+mkLevel mapData = Level { _lvlName = "L01"
+                        , _lvlBoot = bootLevel 
+                        , _lvlMapText = mapData
+                        , _lvlTryMove = tryMove
+                        }
+
 bootLevel :: World -> World
 bootLevel w1 =
   let

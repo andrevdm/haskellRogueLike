@@ -16,9 +16,6 @@ main = do
   GE.runGame (getLevel map01)
 
 getLevel :: Text -> GC.Levels -> GC.Level
-getLevel map01 GC.Levels01 = GC.Level { GC._lvlName = "L01"
-                                      , GC._lvlBoot = L01.bootLevel 
-                                      , GC._lvlMapText = map01
-                                      }
+getLevel map01 GC.Levels01 = L01.mkLevel map01
 
 
