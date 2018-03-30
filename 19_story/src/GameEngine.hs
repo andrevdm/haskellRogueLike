@@ -431,11 +431,13 @@ runAction world action =
     ActTogglePlayerProp prop valEnabled ->
       world & (wdPlayer . plActor . acProps) %~ Map.alter (toggleMapProp valEnabled) prop
 
+{-! SECTION< 19_props_runAction !-}
     ActSetPlayerProp prop valEnabled ->
       world & (wdPlayer . plActor . acProps) %~ Map.insert prop valEnabled
 
     ActClearPlayerProp prop ->
       world & (wdPlayer . plActor . acProps) %~ Map.delete prop
+{-! SECTION> 19_props_runAction !-}
 
     ActMoveActor actor worldPos ->
       let
@@ -456,16 +458,19 @@ runAction world action =
     ActSetStoryHandler h ->
       world & (wdLevel . lvlStoryHandler) .~ h
 
+{-! SECTION< 19_entities_runAction !-}
     ActRemoveEntity existingType atWorldPos ->
       world & wdMap %~ Map.alter (deleteMapEntity existingType) atWorldPos
 
     ActReplaceEntity existingType atWorldPos newEntity ->
       world & wdMap %~ Map.alter (alterMapEntity existingType newEntity) atWorldPos
+{-! SECTION> 19_entities_runAction !-}
 
   where
     toggleMapProp v Nothing = Just v
     toggleMapProp _ (Just _) = Nothing
 
+{-! SECTION< 19_helper_entities_runAction !-}
     alterMapEntity :: E.EntityType -> Entity -> Maybe Entity -> Maybe Entity
     alterMapEntity _ new Nothing = Just new
     alterMapEntity oldType new (Just oldEntity) = if oldType == (oldEntity ^. enType) then Just new else Just oldEntity
@@ -473,6 +478,7 @@ runAction world action =
     deleteMapEntity :: E.EntityType -> Maybe Entity -> Maybe Entity
     deleteMapEntity _ Nothing = Nothing
     deleteMapEntity oldType (Just oldEntity) = if oldType == (oldEntity ^. enType) then Nothing else Just oldEntity
+{-! SECTION> 19_helper_entities_runAction !-}
 
 
 tryMoveActor :: World -> Actor -> (Int, Int) -> Maybe World

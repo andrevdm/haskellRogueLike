@@ -93,31 +93,41 @@ data Entity = Entity { _enType :: !E.EntityType
                      , _enProps :: !(Map Text Text)
                      } deriving (Show, Eq, Ord)
 
+{-! SECTION< 19_level !-}
 data Level = Level { _lvlName :: !Text
                    , _lvlBoot :: !(World -> World)
                    , _lvlMapText :: !Text
                    , _lvlStoryHandler :: !StoryHandler
                    }
+{-! SECTION> 19_level !-}
 
 data Levels = Levels01
             | Levels02
 
 newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
 newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
+{-! SECTION< 19_storyHandler !-}
 type StoryHandler = World -> RogueEvent -> [RogueAction]
+{-! SECTION> 19_storyHandler !-}
 
 data RogueAction = ActMovePlayer (Int, Int)
                  | ActMoveActor Actor WorldPos
                  | ActSetPlayerViewPortStyle ViewPortStyle
                  | ActTogglePlayerProp Text Text
+{-! SECTION< 19_actProps !-}
                  | ActClearPlayerProp Text
                  | ActSetPlayerProp Text Text
+{-! SECTION> 19_actProps !-}
                  | ActGotoLevel Levels
                  | ActSetStoryHandler StoryHandler
+{-! SECTION< 19_entities_actProps !-}
                  | ActRemoveEntity E.EntityType WorldPos
                  | ActReplaceEntity E.EntityType WorldPos Entity
+{-! SECTION> 19_entities_actProps !-}
 
+{-! SECTION< 19_rogueEvent !-}
 data RogueEvent = EvtMove [Actor] (Maybe E.EntityType) WorldPos Actor
+{-! SECTION> 19_rogueEvent !-}
 
 data ViewPortStyle = ViewPortCentre
                    | ViewPortLock PlayerPos

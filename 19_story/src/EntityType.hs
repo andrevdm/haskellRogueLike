@@ -4,6 +4,7 @@ module EntityType where
 
 import Protolude
 
+{-! SECTION< 19_entityTypes !-}
 data EntityType = Blank
                 | Door
                 | DoorClosed
@@ -18,3 +19,4 @@ data EntityType = Blank
                 | Key
                 | Unknown
                 deriving (Show, Eq, Ord)
+{-! SECTION> 19_entityTypes !-}
