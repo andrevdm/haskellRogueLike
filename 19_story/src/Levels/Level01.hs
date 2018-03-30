@@ -1,6 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE LambdaCase #-}
 
 module Levels.Level01 (mkLevel) where
 
@@ -70,8 +69,8 @@ bootLevel w1 =
             }
 
 
-storyCommon :: World -> RogueEvent -> (RogueEvent -> [RogueAction]) -> [RogueAction]
-storyCommon world evt handler =
+storyCommon :: World -> RogueEvent -> [RogueAction]
+storyCommon world evt =
   case evt of
     EvtMove destActors destEntityType posTo movingActor ->
       let isPlayer = isPlayerMoving world movingActor in
@@ -91,28 +90,26 @@ storyCommon world evt handler =
                                          , ActClearPlayerProp "debug:light"
                                          , ActRemoveEntity E.PotionDark posTo
                                          ]
-        -- Fall through 
-        _ -> handler evt
+        _ -> []
 
 
 storyWaitingForKey :: World -> RogueEvent -> [RogueAction]
 storyWaitingForKey world evt =
-  storyCommon world evt $
-    \case
-      EvtMove destActors destEntityType posTo movingActor ->
-        let isPlayer = isPlayerMoving world movingActor in
+  case evt of
+    EvtMove destActors destEntityType posTo movingActor ->
+      let isPlayer = isPlayerMoving world movingActor in
 
-        case (isPlayer, destActors, destEntityType) of
-          -- Player picked up the key
-          (True, [], Just E.Key) ->
-            [ ActMoveActor movingActor posTo
-            , ActSetStoryHandler storyDoorOpen
-            , ActRemoveEntity E.Key posTo
-            ] <>
-            -- Replace all closed doors with open ones
-            ((\closedDoorAt -> ActReplaceEntity E.DoorClosed closedDoorAt $ E.getEntity E.Door) <$> findPos E.DoorClosed)
-                   
-          _ -> []
+      case (isPlayer, destActors, destEntityType) of
+        -- Player picked up the key
+        (True, [], Just E.Key) ->
+          [ ActMoveActor movingActor posTo
+          , ActSetStoryHandler storyDoorOpen
+          , ActRemoveEntity E.Key posTo
+          ] <>
+          -- Replace all closed doors with open ones
+          ((\closedDoorAt -> ActReplaceEntity E.DoorClosed closedDoorAt $ E.getEntity E.Door) <$> findPos E.DoorClosed)
+                 
+        _ -> storyCommon world evt
 
   where
     findPos :: E.EntityType -> [WorldPos]
@@ -126,13 +123,12 @@ storyWaitingForKey world evt =
   
 storyDoorOpen :: World -> RogueEvent -> [RogueAction]
 storyDoorOpen world evt =
-  storyCommon world evt $
-    \case
-      EvtMove destActors destEntityType posTo movingActor ->
-        case (destActors, destEntityType) of
-          ([], Just E.Key) -> [ActMoveActor movingActor posTo]
-          (_, Just E.Stairs) -> [ActGotoLevel Levels02]
-          _ -> []
+  case evt of
+    EvtMove destActors destEntityType posTo movingActor ->
+      case (destActors, destEntityType) of
+        ([], Just E.Key) -> [ActMoveActor movingActor posTo]
+        (_, Just E.Stairs) -> [ActGotoLevel Levels02]
+        _ -> storyCommon world evt
 
 
 isPlayerMoving :: World -> Actor -> Bool
