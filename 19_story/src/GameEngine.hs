@@ -455,8 +455,10 @@ runAction world action =
         (world ^. wdGetLevel)
         l
 
+{-! SECTION< 19_storyHandler_runAction !-}
     ActSetStoryHandler h ->
       world & (wdLevel . lvlStoryHandler) .~ h
+{-! SECTION> 19_storyHandler_runAction !-}
 
 {-! SECTION< 19_entities_runAction !-}
     ActRemoveEntity existingType atWorldPos ->
@@ -505,12 +507,14 @@ tryMoveActor world actor (dx, dy) =
       destEntityType = _enType <$> destEntity
       -- Actors at destination
       destActors = filter (\a -> a ^. acWorldPos == tryWorldTo') (getAllActors world)
+{-! SECTION< 19_tryMoveActor !-}
       -- Create move event
       evt = EvtMove destActors destEntityType tryWorldTo' actor
       -- Run even to get actions
       actions = (world ^. wdLevel ^. lvlStoryHandler) world evt 
    in
    Just $ runActions world actions 
+{-! SECTION> 19_tryMoveActor !-}
 
 
 updateActorFov :: World -> Actor -> Actor

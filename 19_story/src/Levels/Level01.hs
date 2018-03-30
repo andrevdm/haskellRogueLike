@@ -17,6 +17,7 @@ import qualified EntityType as E
 import qualified BoundedInt as B
 import qualified UtilityBrain as UB
 
+{-! SECTION< 19_01_mkLevel !-}
 mkLevel :: Text -> Level
 mkLevel mapText =
   Level { _lvlName = "L01"
@@ -24,6 +25,7 @@ mkLevel mapText =
         , _lvlMapText = mapText
         , _lvlStoryHandler = storyWaitingForKey
         }
+{-! SECTION> 19_01_mkLevel !-}
 
 bootLevel :: World -> World
 bootLevel w1 =

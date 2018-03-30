@@ -119,7 +119,9 @@ data RogueAction = ActMovePlayer (Int, Int)
                  | ActSetPlayerProp Text Text
 {-! SECTION> 19_actProps !-}
                  | ActGotoLevel Levels
+{-! SECTION< 19_setStoryHandler_actProps !-}
                  | ActSetStoryHandler StoryHandler
+{-! SECTION> 19_setStoryHandler_actProps !-}
 {-! SECTION< 19_entities_actProps !-}
                  | ActRemoveEntity E.EntityType WorldPos
                  | ActReplaceEntity E.EntityType WorldPos Entity
