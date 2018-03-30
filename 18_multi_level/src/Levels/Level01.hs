@@ -65,6 +65,7 @@ bootLevel w1 =
             , _acProps = Map.empty
             }
 
+{-! SECTION< 18_level1 !-}
 tryMove :: [Actor] -> Maybe E.EntityType -> World -> WorldPos -> Actor -> [RogueAction]
 tryMove destActors destEntityType _ posTo movingActor =
   -- Is the move allowed
@@ -74,3 +75,4 @@ tryMove destActors destEntityType _ posTo movingActor =
     ([], Nothing) -> [ActMoveActor movingActor posTo]
     (_, Just E.Stairs) -> [ActGotoLevel Levels02]
     _ -> []
+{-! SECTION> 18_level1 !-}

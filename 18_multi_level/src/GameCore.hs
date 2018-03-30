@@ -75,7 +75,9 @@ data World = World { _wdPlayer :: !Player
                    , _wdEnergyIncrements :: !Int -- ^ amount of energy that is added per game loop
                    , _wdUtilBrainAnnotations :: ![(E.EntityType, [UtilAnnotationEntry], [UtilAnnotationEntry])]
                    , _wdGetLevel :: !(Levels -> Level)
+{-! SECTION< 18_world !-}
                    , _wdLevel :: !Level
+{-! SECTION> 18_world !-}
                    }
 
 data Config = Config { _cfgKeys :: !(Map Text Text)
@@ -93,23 +95,29 @@ data Entity = Entity { _enType :: !E.EntityType
                      , _enProps :: !(Map Text Text)
                      } deriving (Show, Eq, Ord)
 
+{-! SECTION< 18_level !-}
 data Level = Level { _lvlName :: !Text
                    , _lvlBoot :: !(World -> World)
                    , _lvlMapText :: !Text
                    , _lvlTryMove :: !([Actor] -> Maybe E.EntityType -> World -> WorldPos -> Actor -> [RogueAction])
                    }
+{-! SECTION> 18_level !-}
 
+{-! SECTION< 18_levels !-}
 data Levels = Levels01
             | Levels02
+{-! SECTION> 18_levels !-}
 
 newtype WorldPos = WorldPos (Int, Int) deriving (Show, Eq, Ord)
 newtype PlayerPos = PlayerPos (Int, Int) deriving (Show, Eq, Ord)
 
+{-! SECTION< 18_rogueActions !-}
 data RogueAction = ActMovePlayer (Int, Int)
                  | ActMoveActor Actor WorldPos
                  | ActSetPlayerViewPortStyle ViewPortStyle
                  | ActTogglePlayerProp Text Text
                  | ActGotoLevel Levels
+{-! SECTION> 18_rogueActions !-}
 
 data ViewPortStyle = ViewPortCentre
                    | ViewPortLock PlayerPos

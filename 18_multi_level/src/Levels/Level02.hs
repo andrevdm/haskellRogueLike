@@ -8,6 +8,7 @@ import           Protolude
 import           GameCore
 import qualified EntityType as E
 
+{-! SECTION< 18_level2 !-}
 mkLevel :: Text -> Level
 mkLevel mapData = Level { _lvlName = "L02"
                         , _lvlBoot = bootLevel 
@@ -27,3 +28,4 @@ tryMove destActors destEntityType _ posTo movingActor =
     ([], Just E.Door) -> [ActMoveActor movingActor posTo]
     ([], Nothing) -> [ActMoveActor movingActor posTo]
     _ -> []
+{-! SECTION> 18_level2 !-}

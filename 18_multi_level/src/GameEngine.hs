@@ -431,6 +431,7 @@ runAction world action =
     ActTogglePlayerProp prop valEnabled ->
       world & (wdPlayer . plActor . acProps) %~ Map.alter (toggleMapProp valEnabled) prop
 
+{-! SECTION< 18_actMoveActor !-}
     ActMoveActor actor worldPos ->
       let
         movedActor = actor & acWorldPos .~ worldPos
@@ -438,7 +439,9 @@ runAction world action =
         pa = w2 ^. wdPlayer ^. plActor
       in
         updateActor w2 (updateActorFov w2 pa)
+{-! SECTION> 18_actMoveActor !-}
 
+{-! SECTION< 18_actGotoLevel !-}
     ActGotoLevel l ->
       bootWorld
         (world ^. wdPlayer ^. plConn)
@@ -446,6 +449,7 @@ runAction world action =
         (world ^. wdPlayer ^. plActor ^. acStdGen)
         (world ^. wdGetLevel)
         l
+{-! SECTION> 18_actGotoLevel !-}
 
   where
     toggleMapProp v Nothing = Just v
@@ -476,10 +480,12 @@ tryMoveActor world actor (dx, dy) =
       destEntityType = _enType <$> destEntity
       -- Actors at destination
       destActors = filter (\a -> a ^. acWorldPos == tryWorldTo') (getAllActors world)
+{-! SECTION< 18_tryMove_main !-}
       -- Get actions
       actions = (world ^. wdLevel ^. lvlTryMove) destActors destEntityType world tryWorldTo' actor
    in
    Just $ runActions world actions 
+{-! SECTION> 18_tryMove_main !-}
 
 
 updateActorFov :: World -> Actor -> Actor
