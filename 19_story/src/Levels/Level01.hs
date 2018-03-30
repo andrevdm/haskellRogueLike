@@ -69,6 +69,7 @@ bootLevel w1 =
             }
 
 
+{-! SECTION< 19_storyCommon !-}
 storyCommon :: World -> RogueEvent -> [RogueAction]
 storyCommon world evt =
   case evt of
@@ -91,8 +92,10 @@ storyCommon world evt =
                                          , ActRemoveEntity E.PotionDark posTo
                                          ]
         _ -> []
+{-! SECTION> 19_storyCommon !-}
 
 
+{-! SECTION< 19_storyWaitingForKey !-}
 storyWaitingForKey :: World -> RogueEvent -> [RogueAction]
 storyWaitingForKey world evt =
   case evt of
@@ -119,8 +122,10 @@ storyWaitingForKey world evt =
         found = filter (\(_, e) -> e ^. enType == et) es
       in
       fst <$> found
+{-! SECTION> 19_storyWaitingForKey !-}
 
   
+{-! SECTION< 19_storyDoorOpen !-}
 storyDoorOpen :: World -> RogueEvent -> [RogueAction]
 storyDoorOpen world evt =
   case evt of
@@ -129,8 +134,11 @@ storyDoorOpen world evt =
         ([], Just E.Key) -> [ActMoveActor movingActor posTo]
         (_, Just E.Stairs) -> [ActGotoLevel Levels02]
         _ -> storyCommon world evt
+{-! SECTION> 19_storyDoorOpen !-}
 
 
+{-! SECTION< 19_isPlayerMoving !-}
 isPlayerMoving :: World -> Actor -> Bool
 isPlayerMoving w a =
   w ^. wdPlayer ^. plActor ^. acId == a ^. acId
+{-! SECTION> 19_isPlayerMoving !-}
