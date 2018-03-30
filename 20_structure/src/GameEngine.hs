@@ -37,6 +37,7 @@ import qualified BoundedInt as B
 import qualified UtilityBrain as UB
 
 
+{-! SECTION< 20_layer0 !-}
 ----------------------------------------------------------------------------------------------------------------
 -- L0 Hosting
 ----------------------------------------------------------------------------------------------------------------
@@ -66,8 +67,10 @@ manageConnection getLevel conn = do
     _ ->
       pass
 ----------------------------------------------------------------------------------------------------------------
+{-! SECTION> 20_layer0 !-}
 
 
+{-! SECTION< 20_layer1 !-}
 ----------------------------------------------------------------------------------------------------------------
 -- L1 App (orchestration)
 ----------------------------------------------------------------------------------------------------------------
@@ -110,8 +113,10 @@ startGame = do
       Nothing -> pass
       Just e -> putText e
 ----------------------------------------------------------------------------------------------------------------
+{-! SECTION> 20_layer1 !-}
 
   
+{-! SECTION< 20_top_layer2 !-}
 ----------------------------------------------------------------------------------------------------------------
 -- L2 (bridge / external services)
 ----------------------------------------------------------------------------------------------------------------
@@ -171,8 +176,10 @@ instance MonadWorld (ReaderT (Host.Connection, TVar World) IO) where
     lift . atomically $ modifyTVar' wt fn
   
   debugPrint = putText
+{-! SECTION> 20_top_layer2 !-}
 -------------------
 
+{-! SECTION< 20_bottom_layer2 !-}
 handleCommand :: (MonadHost m, MonadWorld m) => Text -> m (Maybe Text)
 handleCommand t = 
   case parseCommand t of
@@ -257,6 +264,7 @@ runCmd cmd cmdData =
 sendConfig :: (MonadHost m) => Config -> m ()
 sendConfig config =
   sendHostData . Ae.encodeText $ UiConfig "config" (buildConfig config)
+{-! SECTION> 20_bottom_layer2 !-}
 ----------------------------------------------------------------------------------------------------------------
 
 
