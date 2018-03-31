@@ -1,13 +1,1 @@
-# HTML UI
-
- - HTML UI
-   - bzip2
-   - mousetrap + mousetrap pause
-   - canvas + interaction layer
-   - pause to prevent multiple keys
- - game host
-   - web sockets and scottyApp
- - engine
-   - text commands over web sockets (init, key, resize)
-   - get world size (number of tiles)
-     
+Code for the [Haskell rougelike blog post](http://www.andrevdm.com/posts/2018-04-02-haskell-rogue-like.html)

@@ -1,18 +1,8 @@
-# Rogue Like
+# Haskell rougelike
 
-- Roguelike
-  - [How to Write a Roguelike in 15 Steps](http://www.roguebasin.com/index.php?title=How_to_Write_a_Roguelike_in_15_Steps)
+This is the code for the [Haskell rougelike blog post](http://www.andrevdm.com/posts/2018-04-02-haskell-rogue-like.html)
 
-- Other haskell rogue like tutorials
-  - [http://haskellroguelike.com/lessons/0/](http://haskellroguelike.com/lessons/0/)
-  - [Code Us Some Roguelike in Haskell!](http://jamiltron.com/2012/07/Code_Us_Some_Roguelike_in_Haskell.html)
-  - [Complete Roguelike Tutorial](https://lokathor.gitbooks.io/using-haskell/content/roguelike/)
-  - [Haskell category on rogue basin](http://www.roguebasin.com/index.php?title=Haskell)
+There are 20 sub-projects each corresponding to one of the blog sub-posts/chapters. The code has the annotations for my [Hakyl include compiler](http://www.andrevdm.com/posts/2018-02-05-hakyll-code-build-include-compiler.html). The _Source directory has the source without the annotations, this is created/updated when the makefile or `mkDiff.sh` is run.
 
+There is also a zip of the plain source if you would rather use that.
 
-TODO
- - Next (in order)
-   - story (change move player to be a story action)
-   - combat?
-
- - unordered

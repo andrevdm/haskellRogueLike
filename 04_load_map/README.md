@@ -1,11 +1,1 @@
-# Load map
-
- - html
- - js
- - haskell
-   - WorldPos and PlayerPos
-   - translatePlayerMap
-   - playerCoordToWorld, worldCoordToPlayer
-   - plWorldTopLeft
-   - drawTilesForPlayer
-   - drawAndSend
+Code for the [Haskell rougelike blog post](http://www.andrevdm.com/posts/2018-04-02-haskell-rogue-like.html)

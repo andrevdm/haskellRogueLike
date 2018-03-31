@@ -1,5 +1,1 @@
-# Levels
-
- - html
- - js
- - haskell
+Code for the [Haskell rougelike blog post](http://www.andrevdm.com/posts/2018-04-02-haskell-rogue-like.html)

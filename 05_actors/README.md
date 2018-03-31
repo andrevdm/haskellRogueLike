@@ -1,9 +1,1 @@
-# Actors
-
- - html
- - js
- - haskell
-   - player's actors
-   - two enemy actors
-   - why make the player's actor special?
-   - adding the actors to the map to draw
+Code for the [Haskell rougelike blog post](http://www.andrevdm.com/posts/2018-04-02-haskell-rogue-like.html)
