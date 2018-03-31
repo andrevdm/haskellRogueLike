@@ -1,5 +1,6 @@
 #!/bin/sh
 
+rm -rf source.zip | true
 rm -rf _Source | true
 rsync -mr --exclude '.git/***' --exclude '.stack-work' --exclude '_Source/***' --include '*/' --include '*hs' --include '*js' --include '*html' --include '*cabal' --exclude '*' ./[012]*_* ./_Source
 
@@ -123,3 +124,5 @@ cat 18_multi_level/changes.patch      | ./diff2html > 18_multi_level/changes.pat
 cat 19_story/changes.patch            | ./diff2html > 19_story/changes.patch.html  &
 cat 20_structure/changes.patch        | ./diff2html > 20_structure/changes.patch.html  &
 wait
+
+zip -r -9 source.zip _Source
