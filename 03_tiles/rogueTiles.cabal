@@ -2,7 +2,7 @@ name:                rogueTiles
 version:             0.0.1.0
 -- synopsis:
 -- description:
-homepage:            https://github.com/andrevdm/rogueLikeDemo
+homepage:            https://github.com/andrevdm/haskellRogueLike
 license:             BSD3
 license-file:        LICENSE
 author:              Andre Van Der Merwe
@@ -52,4 +52,4 @@ executable rogueTiles-exe
 
 source-repository head
   type:     git
-  location: https://github.com/andrevdm/rogueLikeDemo
+  location: https://github.com/andrevdm/haskellRogueLike
