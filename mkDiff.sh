@@ -1,13 +1,13 @@
 #!/bin/sh
 
-rm -rf _diff | true
-rsync -mr --exclude '.git/***' --exclude '.stack-work' --exclude '_diff/***' --include '*/' --include '*hs' --include '*js' --include '*html' --include '*cabal' --exclude '*' ./[012]*_* ./_diff
+rm -rf _Source | true
+rsync -mr --exclude '.git/***' --exclude '.stack-work' --exclude '_Source/***' --include '*/' --include '*hs' --include '*js' --include '*html' --include '*cabal' --exclude '*' ./[012]*_* ./_Source
 
-find _diff/ -type f -name "*hs" | xargs sed -i 's/{-! SECTION.*//g'
-find _diff/ -type f -name "*js" | xargs sed -i 's/\/\/!SECTION.*//g'
-find _diff/ -type f -name "*html" | xargs sed -i 's/<!-- !SECTION.*//g'
+find _Source/ -type f -name "*hs" | xargs sed -i 's/{-! SECTION.*//g'
+find _Source/ -type f -name "*js" | xargs sed -i 's/\/\/!SECTION.*//g'
+find _Source/ -type f -name "*html" | xargs sed -i 's/<!-- !SECTION.*//g'
 
-cd _diff
+cd _Source
 
 #03
 diff 01_web_ui/src/ 03_tiles/src/ -w -B -a -d -u -b --new-file > ../03_tiles/changes.patch | true
