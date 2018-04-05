@@ -16,6 +16,8 @@ main :: IO ()
 main = do
   map01 <- Txt.readFile "worlds/simple.csv"
   map02 <- Txt.readFile "worlds/level02.csv"
+  putText "Press enter to start the GUI"
+  void Txt.getLine
   void . forkIO $ GE.runGame (getLevel map01 map02)
   Con.runGui
 
