@@ -102,6 +102,10 @@ diff 18_multi_level/html/rogue.js 19_story/html/rogue.js -w -B -a -d -u -b >> ..
 diff 19_story/src/ 20_structure/src/ -w -B -a -d -u -b -r --new-file > ../20_structure/changes.patch | true
 diff 19_story/app/ 20_structure/app/ -w -B -a -d -u -b -r --new-file >> ../20_structure/changes.patch | true
 
+#21
+diff 20_structure/src/ 21_console/src/ -w -B -a -d -u -b -r --new-file > ../21_console/changes.patch | true
+diff 20_structure/app/ 21_console/app/ -w -B -a -d -u -b -r --new-file >> ../21_console/changes.patch | true
+
 cd ..
 
 
@@ -123,6 +127,7 @@ cat 17_levels/changes.patch           | ./diff2html > 17_levels/changes.patch.ht
 cat 18_multi_level/changes.patch      | ./diff2html > 18_multi_level/changes.patch.html  &
 cat 19_story/changes.patch            | ./diff2html > 19_story/changes.patch.html  &
 cat 20_structure/changes.patch        | ./diff2html > 20_structure/changes.patch.html  &
+cat 21_console/changes.patch          | ./diff2html > 21_console/changes.patch.html  &
 wait
 
 zip -r -9 source.zip _Source

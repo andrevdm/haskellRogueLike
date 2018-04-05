@@ -21,6 +21,7 @@ build:
 	 @$(MAKE) -C 18_multi_level build
 	 @$(MAKE) -C 19_story build
 	 @$(MAKE) -C 20_structure build
+	 @$(MAKE) -C 21_console build
 	 ./mkDiff.sh
 
 .PHONY: setup
@@ -44,6 +45,7 @@ setup:
 	 @$(MAKE) -C 18_multi_level setup
 	 @$(MAKE) -C 19_story setup
 	 @$(MAKE) -C 20_structure setup
+	 @$(MAKE) -C 21_console setup
 
 .PHONY: test
 test:
@@ -66,6 +68,7 @@ test:
 	 @$(MAKE) -C 18_multi_level test
 	 @$(MAKE) -C 19_story test
 	 @$(MAKE) -C 20_structure test
+	 @$(MAKE) -C 21_console test
 
 .PHONY: lint
 lint:
@@ -88,3 +91,4 @@ lint:
 	 @$(MAKE) -C 18_multi_level lint
 	 @$(MAKE) -C 19_story lint
 	 @$(MAKE) -C 20_structure lint
+	 # @$(MAKE) -C 21_console lint
