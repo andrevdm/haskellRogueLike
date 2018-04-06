@@ -37,6 +37,7 @@ close :: WS.Connection -> IO ()
 close conn = WS.sendClose conn ("" :: Text)
 
 
+{-! SECTION< 21_runGui !-}
 runGui :: IO ()
 runGui = do
   IO.hSetEcho stdin False
@@ -50,8 +51,10 @@ runGui = do
     app conn = do
       (x, y) <- getSize
       runConnection conn x y 
+{-! SECTION> 21_runGui !-}
 
 
+{-! SECTION< 21_runConnection !-}
 runConnection :: WS.Connection -> Int -> Int -> IO ()
 runConnection conn x y = do
   sendCommand conn $ "init|" <> show x <> "|" <> show y <> ""
@@ -64,7 +67,9 @@ runConnection conn x y = do
       cmd <- receiveCommand conn
       handleCommand conn cmd
       loop
+{-! SECTION> 21_runConnection !-}
 
+{-! SECTION< 21_keys !-}
 runKeys :: WS.Connection -> IO ()
 runKeys conn = do
   key <- getKey >>= \case
@@ -92,8 +97,10 @@ getKey = reverse <$> getKey' ""
           char <- IO.getChar
           more <- IO.hReady stdin
           (if more then getKey' else return) (char:chars)
+{-! SECTION> 21_keys !-}
 
 
+{-! SECTION< 21_handleCommand !-}
 handleCommand :: WS.Connection -> Text -> IO ()
 handleCommand conn cmd' =
   case Ae.eitherDecode (BSL.fromStrict . TxtE.encodeUtf8 $ cmd') :: Either [Char] CommandWrapper of
@@ -115,8 +122,10 @@ handleConfig conn cmd' =
       (w,h) <- getSize
       sendCommand conn $ "redraw|" <> show w <> "|" <> show h
       pass
+{-! SECTION> 21_handleCommand !-}
 
 
+{-! SECTION< 21_drawing !-}
 handleDraw :: WS.Connection -> Text -> IO ()
 handleDraw _conn cmd' =
   case Ae.eitherDecode (BSL.fromStrict . TxtE.encodeUtf8 $ cmd') :: Either [Char] GC.UiDrawCommand of
@@ -146,14 +155,18 @@ handleDraw _conn cmd' =
       let (t, s) = tileFromId tid
       A.setSGR s
       putStr t
+{-! SECTION> 21_drawing !-}
       
 
+{-! SECTION< 21_getSize !-}
 getSize :: IO (Int, Int)
 getSize =
   Sz.size @ Int >>= \case
     Nothing -> throwString "unable to get screen size"
     Just (Sz.Window w h) -> pure (min 50 w, min 20 h)
+{-! SECTION> 21_getSize !-}
       
+{-! SECTION< 21_tiles !-}
 -- | https://github.com/globalcitizen/zomia/blob/master/USEFUL-UNICODE.md
 tileFromId :: Int -> (Text, [A.SGR])
 tileFromId 4113 = (" ", []) -- " " -- E.Blank
@@ -169,6 +182,7 @@ tileFromId 1646 = ("☁", [A.SetColor A.Foreground A.Dull A.White]) -- "d" -- E.
 tileFromId  846 = ("☀", [A.SetColor A.Foreground A.Vivid A.Yellow]) -- "l" -- E.PotionLight
 tileFromId 5445 = ("ዋ", [A.SetColor A.Foreground A.Dull A.Green]) -- "k" -- E.Key
 tileFromId _    = ("?", [])
+{-! SECTION> 21_tiles !-}
 
 --------------------------------------------------------------------------------------------------------------------
 data CommandWrapper = CommandWrapper
